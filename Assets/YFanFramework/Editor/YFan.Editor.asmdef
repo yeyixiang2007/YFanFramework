@@ -1,0 +1,23 @@
+{
+    "name": "YFan.Editor",
+    "rootNamespace": "YFan.Editor",
+    "references": [
+        "YFan.Runtime",
+        "QFramework",
+        "UniTask",
+        "Unity.Addressables.Editor",
+        "Unity.InputSystem",
+        "Newtonsoft.Json"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

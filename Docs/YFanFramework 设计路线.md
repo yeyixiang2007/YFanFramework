@@ -8,19 +8,19 @@
 **目标**：搭建项目结构，确立依赖关系，魔改 QFramework 核心。
 
 1.  **项目结构初始化**
-    *   创建 Unity 工程。
+    <!-- *   创建 Unity 工程。 -->
     *   **严格配置 Assembly Definition (Asmdef)**：
-        *   创建 `YFanFramework.Runtime.asmdef` (引用 QFramework, UniTask, Addressables, Newtonsoft.Json, NewInputSystem)。
-        *   创建 `YFanFramework.Editor.asmdef` (引用 Runtime, UnityEditor)。
-        *   确保 Runtime 绝不引用 Editor。
+        <!-- *   创建 `YFanFramework.Runtime.asmdef` (引用 QFramework, UniTask, Addressables, Newtonsoft.Json, NewInputSystem)。 -->
+        <!-- *   创建 `YFanFramework.Editor.asmdef` (引用 Runtime, UnityEditor)。 -->
+        <!-- *   确保 Runtime 绝不引用 Editor。 -->
 2.  **核心架构层魔改**
-    *   引入 QFramework (Architecture/IOC/MVC)。
-    *   实现 **`AbstractController`** (Runtime)：继承 MonoBehaviour & IController。
+    <!-- *   引入 QFramework (Architecture/IOC/MVC)。 -->
+    <!-- *   实现 **`AbstractController`** (Runtime)：继承 MonoBehaviour & IController。 -->
     *   实现 **`AbstractEditor`** (Editor)：继承 EditorWindow & IController (解决 Editor 脚本的 asmdef 引用问题)。
 3.  **基础工具集 (Utils - Part 1)**
-    *   **`LogUtil` & `YLog`**：封装 Debug.Log，实现日志等级开关、颜色格式化。
-    *   **`MonoUtil`**：实现非 Mono 类的 Update/Coroutine 驱动（为后续 System 做准备）。
-    *   **`TaskUtil`**：封装 UniTask 常用扩展，确立异步编程规范。
+    <!-- *   **`LogUtil` & `YLog`**：封装 Debug.Log，实现日志等级开关、颜色格式化。 -->
+    <!-- *   **`MonoUtil`**：实现非 Mono 类的 Update/Coroutine 驱动（为后续 System 做准备）。 -->
+    <!-- *   **`TaskUtil`**：封装 UniTask 常用扩展，确立异步编程规范。 -->
 
 *   🚩 **里程碑**：空项目运行不报错，能通过 `YLog` 打印带颜色的日志，且 EditorWindow 能触发简单的架构 Command。
 
