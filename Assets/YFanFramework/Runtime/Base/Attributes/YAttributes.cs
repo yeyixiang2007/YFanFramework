@@ -84,7 +84,7 @@ namespace YFan.Attributes
     /// <summary>
     /// 盒子分组：将连续的字段包裹在一个方框内
     /// </summary>
-    [AttributeUsage(AttributeTargets.Field)]
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Method | AttributeTargets.Property)]
     public class YBoxGroupAttribute : PropertyAttribute
     {
         public string GroupName;
