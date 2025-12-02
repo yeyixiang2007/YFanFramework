@@ -308,6 +308,104 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1206884254
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1206884256}
+  - component: {fileID: 1206884255}
+  - component: {fileID: 1206884257}
+  - component: {fileID: 1206884258}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1206884255
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1206884254}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ead6a8e90e3d23e4d879aa2ab91a3f6f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  PlayerID: P_1001
+  Nickname: YFanUser
+  Health: 100
+  Mana: 200
+  Level: 1
+  IsDebugMode: 0
+  AdminPassword: 
+  GameSpeed: 1
+--- !u!4 &1206884256
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1206884254}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1206884257
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1206884254}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 410a49cc63bc87c479b5cdcc449e5c91, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _sourceData:
+    ID: 0
+    Name: 
+    Scores: []
+    Position: {x: 0, y: 0, z: 0}
+    Type: 0
+  _jsonResult: 
+  _deserializedData:
+    ID: 0
+    Name: 
+    Scores: []
+    Position: {x: 0, y: 0, z: 0}
+    Type: 0
+--- !u!114 &1206884258
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1206884254}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e5598eecbb15084c9804d219c6e59ce, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  InputString: "Hello YFanFramework! \u8FD9\u662F\u4E00\u6BB5\u6D4B\u8BD5\u6570\u636E\u3002"
+  _originalSize: 0
+  _processedBytes: 
+  _currentSize: 0
+  _status: Empty
+  _restoredString: 
+  _isMatch: 0
 --- !u!1 &1304845144
 GameObject:
   m_ObjectHideFlags: 0
@@ -339,6 +437,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad3713adf84c3044fa472d1539d75092, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _lastEventModule: 
+  _lastEventMessage: "\u7B49\u5F85\u65E5\u5FD7..."
 --- !u!4 &1304845146
 Transform:
   m_ObjectHideFlags: 0
@@ -366,6 +466,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f07df63045a079488d0b3eaf9428d89, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _appStatus: "\u6B63\u5E38\u8FD0\u884C"
+  _coroutineStatus: "\u65E0"
+  _updateFrameCount: 0
+  _fixedUpdateFrameCount: 0
+  _isUpdateRunning: 0
 --- !u!114 &1304845148
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -378,6 +483,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83d440b3162dad94d9c57761ea62c4d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _ctsStatus: Empty
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -385,3 +491,4 @@ SceneRoots:
   - {fileID: 963194228}
   - {fileID: 705507995}
   - {fileID: 1304845146}
+  - {fileID: 1206884256}

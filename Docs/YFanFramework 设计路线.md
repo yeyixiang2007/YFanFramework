@@ -16,7 +16,7 @@
 2.  **核心架构层魔改**
     <!-- *   引入 QFramework (Architecture/IOC/MVC)。 -->
     <!-- *   实现 **`AbstractController`** (Runtime)：继承 MonoBehaviour & IController。 -->
-    *   实现 **`AbstractEditor`** (Editor)：继承 EditorWindow & IController (解决 Editor 脚本的 asmdef 引用问题)。
+    <!-- *   实现 **`AbstractEditor`** (Editor)：继承 EditorWindow & IController (解决 Editor 脚本的 asmdef 引用问题)。 -->
 3.  **基础工具集 (Utils - Part 1)**
     <!-- *   **`LogUtil` & `YLog`**：封装 Debug.Log，实现日志等级开关、颜色格式化。 -->
     <!-- *   **`MonoUtil`**：实现非 Mono 类的 Update/Coroutine 驱动（为后续 System 做准备）。 -->
@@ -38,8 +38,8 @@
         *   **初期**：使用反射在 Runtime 扫描注册（快速实现）。
         *   **后期优化**：结合 CodeGenKit，改为“编译前生成静态注册代码”（解决反射性能问题）。
 3.  **数据与配置基础**
-    *   **`JSONUtil`**：封装 Newtonsoft.Json。
-    *   **`SaveUtil`**：实现基于 JSON 的多槽位存档读写。
+    <!-- *   **`JSONUtil`**：封装 Newtonsoft.Json。 -->
+    <!-- *   **`SaveUtil`**：实现基于 JSON 的多槽位存档读写。 -->
 
 *   🚩 **里程碑**：右键点击即可生成一个完整的 MVC 模块代码，并且无需手动写注册逻辑即可运行。
 
