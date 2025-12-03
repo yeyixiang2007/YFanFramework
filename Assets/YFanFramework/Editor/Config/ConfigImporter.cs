@@ -26,8 +26,8 @@ namespace YFan.Editor.Config
         public static void ImportData(string csvFile)
         {
             string fileName = Path.GetFileNameWithoutExtension(csvFile);
-            string className = $"Game.Data.{fileName}";
-            string tableClassName = $"Game.Data.{fileName}Table";
+            string className = $"YFan.Base.{fileName}";
+            string tableClassName = $"YFan.Base.{fileName}Table";
 
             // 反射获取类型
             Type dataType = GetTypeByString(className);

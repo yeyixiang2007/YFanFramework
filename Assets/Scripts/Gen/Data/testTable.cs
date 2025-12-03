@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Game.Data
+namespace YFan.Base
 {
     [Serializable]
     public class test
