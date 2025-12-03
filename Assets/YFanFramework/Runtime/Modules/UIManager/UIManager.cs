@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using QFramework;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using YFan.Attributes;
 using YFan.Utils;
@@ -14,19 +15,25 @@ namespace YFan.Runtime.Modules
     {
         #region 内部状态
 
-        private GameObject _uiRoot; // UI 根节点 (Canvas 父节点)
-        private Canvas _mainCanvas; // 主 Canvas 组件
+        private GameObject _uiRoot;
+        private Canvas _mainCanvas;
 
         // 层级根节点容器
         private readonly Dictionary<UILayer, Transform> _layers = new Dictionary<UILayer, Transform>();
-
-        // 已加载的面板缓存 [Key: ClassName, Value: Instance]
+        // 已加载的面板缓存
         private readonly Dictionary<string, BasePanel> _loadedPanels = new Dictionary<string, BasePanel>();
-
-        // UI 栈 (用于 Push/Pop)
+        // UI 栈
         private readonly Stack<BasePanel> _panelStack = new Stack<BasePanel>();
 
-        // 资产加载工具
+        // --- 遮罩管理 ---
+        private GameObject _maskObj; // 遮罩物体
+        private Button _maskBtn;     // 遮罩按钮 (处理点击关闭)
+        private CanvasGroup _maskCG; // 控制遮罩显隐
+
+        // --- 焦点管理 ---
+        // 记录每次 Push 前的焦点物体，Pop 时还原
+        private readonly Stack<GameObject> _focusHistory = new Stack<GameObject>();
+
         private IAssetUtil _assetUtil => this.GetUtility<IAssetUtil>();
 
         #endregion
@@ -34,20 +41,19 @@ namespace YFan.Runtime.Modules
         protected override void OnInit()
         {
             InitUIRoot();
+            InitMask();
             YLog.Info("UIManager Initialized", "UIManager");
         }
 
-        #region 初始化根节点
+        #region 初始化
 
         private void InitUIRoot()
         {
             if (_uiRoot != null) return;
 
-            // 创建 UI Root
             _uiRoot = new GameObject("UIRoot");
             UnityEngine.Object.DontDestroyOnLoad(_uiRoot);
 
-            // 配置 Canvas
             _mainCanvas = _uiRoot.AddComponent<Canvas>();
             _mainCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
             _mainCanvas.sortingOrder = 0;
@@ -59,71 +65,96 @@ namespace YFan.Runtime.Modules
 
             _uiRoot.AddComponent<GraphicRaycaster>();
 
-            // 创建层级节点 (按枚举顺序创建，保证 Hierarchy 顺序即渲染顺序)
+            // 确保 EventSystem 存在 (焦点管理必须)
+            if (EventSystem.current == null)
+            {
+                var eventSystem = new GameObject("EventSystem");
+                eventSystem.transform.SetParent(_uiRoot.transform);
+                eventSystem.AddComponent<EventSystem>();
+                eventSystem.AddComponent<StandaloneInputModule>();
+            }
+
             foreach (UILayer layer in Enum.GetValues(typeof(UILayer)))
             {
                 var layerGo = new GameObject(layer.ToString());
                 layerGo.transform.SetParent(_uiRoot.transform, false);
-
-                // 铺满
                 var rect = layerGo.AddComponent<RectTransform>();
                 rect.anchorMin = Vector2.zero;
                 rect.anchorMax = Vector2.one;
                 rect.offsetMin = Vector2.zero;
                 rect.offsetMax = Vector2.zero;
 
-                // 只有 System 层需要极高的 Order，或者简单利用 Hierarchy 顺序 (Sibling Index)
-                // 这里我们利用 Sibling Index，因为我们是按 Enum 顺序创建的
-
                 _layers.Add(layer, layerGo.transform);
             }
         }
 
+        private void InitMask()
+        {
+            // 创建一个全局通用的遮罩
+            _maskObj = new GameObject("UI_Blocker_Mask");
+            // 初始隐藏，不挂在任何层级下，动态调整
+            _maskObj.transform.SetParent(_uiRoot.transform, false);
+
+            var img = _maskObj.AddComponent<Image>();
+            img.color = new Color(0, 0, 0, 0.75f); // 黑色半透明
+
+            _maskBtn = _maskObj.AddComponent<Button>();
+            _maskBtn.transition = Selectable.Transition.None;
+            _maskBtn.onClick.AddListener(OnMaskClick);
+
+            _maskCG = _maskObj.AddComponent<CanvasGroup>();
+            _maskCG.alpha = 0;
+            _maskCG.blocksRaycasts = false;
+
+            var rect = _maskObj.GetComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+        }
+
         #endregion
 
-        #region 普通操作 (Open / Close)
+        #region 普通操作
 
         public async UniTask<T> Open<T>(UIPanelData data = null) where T : BasePanel
         {
             string panelName = typeof(T).Name;
             BasePanel panel = await GetOrCreatePanel<T>();
-
             if (panel == null) return null;
 
-            // 确保显示在最前 (同一层级内)
             panel.transform.SetAsLastSibling();
-
             panel.Open(data);
+
+            // 普通 Open 暂不处理复杂的栈式焦点和遮罩逻辑
+            // 如果希望普通 Open 也支持，需统一逻辑。这里建议 Open 用于非模态，Push 用于模态。
+
             return panel as T;
         }
 
-        public void Close<T>() where T : BasePanel
-        {
-            ClosePanel(typeof(T).Name);
-        }
+        public void Close<T>() where T : BasePanel => ClosePanel(typeof(T).Name);
 
         public void ClosePanel(string panelName)
         {
             if (_loadedPanels.TryGetValue(panelName, out var panel))
             {
-                // 如果该面板在栈中，这是非法操作，应该走 Pop
-                // 但为了健壮性，这里仅仅是 Close 并不移除栈引用（可能会导致栈逻辑混乱，严谨项目需校验）
-                if (_panelStack.Contains(panel))
+                // 如果是栈顶面板，走 Pop 流程以保证焦点和遮罩正确
+                if (_panelStack.Count > 0 && _panelStack.Peek() == panel)
                 {
-                    YLog.Warn($"尝试直接 Close 一个栈内面板 [{panelName}]，建议使用 Pop()", "UIManager");
+                    Pop();
                 }
-
-                panel.Close();
+                else
+                {
+                    panel.Close();
+                    // 如果面板在栈中间（非法操作），这里暂不做移除，防止破坏栈结构
+                }
             }
         }
 
         public T GetPanel<T>() where T : BasePanel
         {
             string name = typeof(T).Name;
-            if (_loadedPanels.TryGetValue(name, out var panel))
-            {
-                return panel as T;
-            }
+            if (_loadedPanels.TryGetValue(name, out var panel)) return panel as T;
             return null;
         }
 
@@ -133,21 +164,32 @@ namespace YFan.Runtime.Modules
 
         public async UniTask<T> Push<T>(UIPanelData data = null) where T : BasePanel
         {
-            // 暂停栈顶面板
+            // 1. 记录当前焦点
+            RecordCurrentFocus();
+
+            // 2. 暂停当前栈顶面板
             if (_panelStack.Count > 0)
             {
                 var top = _panelStack.Peek();
-                top.Hide();
+                top.Hide(); // 暂停/隐藏旧面板
             }
 
-            // 加载并打开新面板
+            // 3. 加载新面板
             BasePanel nextPanel = await GetOrCreatePanel<T>();
             if (nextPanel == null) return null;
 
+            _panelStack.Push(nextPanel);
+
+            // 4. 处理遮罩 (关键步骤)
+            // 将面板移到其 Layer 的最前方
+            nextPanel.transform.SetAsLastSibling();
+            RefreshMaskState(nextPanel);
+
+            // 5. 打开面板
             nextPanel.Open(data);
 
-            // 入栈
-            _panelStack.Push(nextPanel);
+            // 6. 设置新焦点
+            SetPanelFocus(nextPanel);
 
             return nextPanel as T;
         }
@@ -156,16 +198,23 @@ namespace YFan.Runtime.Modules
         {
             if (_panelStack.Count == 0) return;
 
-            // 弹出并关闭当前
+            // 1. 关闭当前栈顶
             var current = _panelStack.Pop();
             current.Close();
 
-            // 恢复上一个
+            // 2. 恢复上一个面板
+            BasePanel prev = null;
             if (_panelStack.Count > 0)
             {
-                var prev = _panelStack.Peek();
+                prev = _panelStack.Peek();
                 prev.Show(); // Resume
             }
+
+            // 3. 刷新遮罩 (如果上一个面板需要遮罩，遮罩移到它下面；如果不需要或栈空，隐藏遮罩)
+            RefreshMaskState(prev);
+
+            // 4. 恢复焦点
+            RestorePreviousFocus();
         }
 
         public void ClearStack()
@@ -174,6 +223,101 @@ namespace YFan.Runtime.Modules
             {
                 var p = _panelStack.Pop();
                 p.Close();
+            }
+            _focusHistory.Clear();
+            RefreshMaskState(null);
+            EventSystem.current.SetSelectedGameObject(null);
+        }
+
+        #endregion
+
+        #region 辅助逻辑 (Focus & Mask)
+
+        private void RefreshMaskState(BasePanel activePanel)
+        {
+            if (activePanel != null && activePanel.UseMask)
+            {
+                // 启用遮罩
+                _maskObj.SetActive(true);
+                _maskCG.alpha = 1;
+                _maskCG.blocksRaycasts = true;
+
+                // 将遮罩移动到 activePanel 的同一个父节点下
+                _maskObj.transform.SetParent(activePanel.transform.parent, false);
+
+                // 设置顺序：activePanel 的索引 - 1
+                int index = activePanel.transform.GetSiblingIndex();
+                _maskObj.transform.SetSiblingIndex(Mathf.Max(0, index - 1));
+
+                // 确保 activePanel 在遮罩之上 (防止 index 计算误差)
+                // activePanel.transform.SetAsLastSibling(); // 不需要，因为上面刚 Set 过了，这里只要 Mask 足够靠后即可
+            }
+            else
+            {
+                // 隐藏遮罩
+                _maskCG.alpha = 0;
+                _maskCG.blocksRaycasts = false;
+                _maskObj.SetActive(false);
+                // 移回 Root 防止干扰层级
+                _maskObj.transform.SetParent(_uiRoot.transform, false);
+            }
+        }
+
+        private void OnMaskClick()
+        {
+            // 只有栈顶面板允许点击遮罩关闭
+            if (_panelStack.Count > 0)
+            {
+                var top = _panelStack.Peek();
+                if (top.UseMask && top.CloseOnMaskClick)
+                {
+                    Pop();
+                }
+            }
+        }
+
+        private void RecordCurrentFocus()
+        {
+            if (EventSystem.current != null)
+            {
+                _focusHistory.Push(EventSystem.current.currentSelectedGameObject);
+            }
+            else
+            {
+                _focusHistory.Push(null);
+            }
+        }
+
+        private void RestorePreviousFocus()
+        {
+            if (_focusHistory.Count > 0)
+            {
+                var lastFocus = _focusHistory.Pop();
+                if (lastFocus != null && lastFocus.activeInHierarchy)
+                {
+                    EventSystem.current.SetSelectedGameObject(lastFocus);
+                }
+            }
+        }
+
+        private void SetPanelFocus(BasePanel panel)
+        {
+            if (panel.DefaultFocus != null)
+            {
+                // 延迟一帧设置，确保 UI 已经 Active 且 Layout 重建完成
+                UniTask.Create(async () =>
+                {
+                    await UniTask.Yield(); // 等待一帧
+                    if (panel.IsVisible && panel.DefaultFocus != null)
+                    {
+                        EventSystem.current.SetSelectedGameObject(panel.DefaultFocus);
+                    }
+                });
+            }
+            else
+            {
+                // 如果没有指定焦点，为了防止手柄失控，最好清除选中
+                EventSystem.current.SetSelectedGameObject(null);
             }
         }
 
@@ -184,20 +328,7 @@ namespace YFan.Runtime.Modules
         private async UniTask<BasePanel> GetOrCreatePanel<T>() where T : BasePanel
         {
             string panelName = typeof(T).Name;
-
-            // 检查缓存
-            if (_loadedPanels.TryGetValue(panelName, out var cachedPanel))
-            {
-                return cachedPanel;
-            }
-
-            // 异步加载 Prefab
-            // 注意：这里 AssetKey 默认取类名，这要求 Prefab 名字和类名一致，且 Addressable Key 也是这个名字
-            // 如果需要自定义 Key，需实例化一个 T 获取属性，比较麻烦，通常约定优于配置
-
-            // 临时实例化一个 prefab，但 AssetUtil.InstantiateAsync 已经帮我们做了实例化
-            // 我们需要知道 Key。由于 T 是泛型，我们无法直接访问 T.AssetKey 静态属性。
-            // 约定：Prefab Addressable Name == 类名
+            if (_loadedPanels.TryGetValue(panelName, out var cachedPanel)) return cachedPanel;
 
             GameObject panelGo = await _assetUtil.InstantiateAsync(panelName);
             if (panelGo == null)
@@ -206,7 +337,6 @@ namespace YFan.Runtime.Modules
                 return null;
             }
 
-            // 获取组件
             T panel = panelGo.GetComponent<T>();
             if (panel == null)
             {
@@ -215,30 +345,20 @@ namespace YFan.Runtime.Modules
                 return null;
             }
 
-            // 设置层级
             if (_layers.TryGetValue(panel.Layer, out var layerRoot))
             {
                 panel.transform.SetParent(layerRoot, false);
             }
             else
             {
-                panel.transform.SetParent(_layers[UILayer.Mid], false); // 默认放 Mid
+                panel.transform.SetParent(_layers[UILayer.Mid], false);
             }
 
-            // 初始化
             panel.Init();
-
-            // 加入缓存
             _loadedPanels.Add(panelName, panel);
-
             return panel;
         }
 
         #endregion
-
-        // 记得在 Dispose 时卸载 Addressables 引用（如果 AssetUtil 没有自动管理，这里可能需要手动清理）
-        // 不过目前的 AssetUtil 是 LoadAsync 时计数，InstantiateAsync 内部也是 Load。
-        // UIManager 这里没有 Release 的逻辑，意味着 UI 打开过一次就常驻内存。
-        // 如果需要 Unload，需要增加 Unload<T>() 方法调用 AssetUtil.Release(Key) 并 Destroy(go)。
     }
 }

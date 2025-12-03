@@ -274,15 +274,7 @@ namespace YFan.Editor.Config
                 {
                     string val = _tableData[r][c];
 
-                    // 第一列前两行只读
-                    if (c == 0 && (r == 0 || r == 1))
-                    {
-                        using (new EditorGUI.DisabledScope(true))
-                        {
-                            EditorGUILayout.TextField(val, GUILayout.Width(minColWidth));
-                        }
-                    }
-                    else if (r == 1) // 类型选择
+                    if (r == 1) // 类型选择
                     {
                         int currentIndex = Array.IndexOf(_supportedTypes, val);
                         if (currentIndex == -1) currentIndex = 0;

@@ -7,14 +7,14 @@ namespace YFan.Utils
 {
     /// <summary>
     /// 基于 Newtonsoft.Json 的高性能 JSON 工具
-    /// * 自动处理 Unity 常用类型 (Vector3, Color 等) 的序列化格式
-    /// * 统一异常处理，对接 YLog
-    /// * 支持忽略循环引用
+    /// + 自动处理 Unity 常用类型 (Vector3, Color 等) 的序列化格式
+    /// + 统一异常处理，对接 YLog
+    /// + 支持忽略循环引用
     /// </summary>
     public static class JSONUtil
     {
-        // 全局默认配置
-        private static readonly JsonSerializerSettings _defaultSettings;
+        // 公开配置，供 BinaryUtil 的 BSON 序列化复用
+        public static readonly JsonSerializerSettings DefaultSettings;
 
         // 格式化配置 (用于 Debug 输出)
         private static readonly JsonSerializerSettings _prettySettings;
@@ -22,7 +22,7 @@ namespace YFan.Utils
         static JSONUtil()
         {
             // --- 初始化默认配置 ---
-            _defaultSettings = new JsonSerializerSettings
+            DefaultSettings = new JsonSerializerSettings
             {
                 // 忽略循环引用 (防止序列化 GameObject/Transform 时死循环)
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
@@ -54,7 +54,7 @@ namespace YFan.Utils
 
             try
             {
-                return JsonConvert.SerializeObject(obj, pretty ? _prettySettings : _defaultSettings);
+                return JsonConvert.SerializeObject(obj, pretty ? _prettySettings : DefaultSettings);
             }
             catch (Exception e)
             {
@@ -76,7 +76,7 @@ namespace YFan.Utils
 
             try
             {
-                return JsonConvert.DeserializeObject<T>(json, _defaultSettings);
+                return JsonConvert.DeserializeObject<T>(json, DefaultSettings);
             }
             catch (Exception e)
             {
@@ -94,7 +94,7 @@ namespace YFan.Utils
 
             try
             {
-                return JsonConvert.DeserializeObject(json, type, _defaultSettings);
+                return JsonConvert.DeserializeObject(json, type, DefaultSettings);
             }
             catch (Exception e)
             {
@@ -105,7 +105,7 @@ namespace YFan.Utils
 
         /// <summary>
         /// 将 JSON 数据填充到一个已存在的对象中 (覆盖数据)
-        /// * 常用于：热更配置覆盖默认配置
+        /// + 常用于：热更配置覆盖默认配置
         /// </summary>
         public static void PopulateObject(string json, object target)
         {
@@ -113,7 +113,7 @@ namespace YFan.Utils
 
             try
             {
-                JsonConvert.PopulateObject(json, target, _defaultSettings);
+                JsonConvert.PopulateObject(json, target, DefaultSettings);
             }
             catch (Exception e)
             {
@@ -127,7 +127,7 @@ namespace YFan.Utils
 
         /// <summary>
         /// 深度克隆一个对象 (通过 序列化 -> 反序列化 实现)
-        /// * 性能一般，但非常方便，且能实现深拷贝
+        /// + 性能一般，但非常方便，且能实现深拷贝
         /// </summary>
         public static T DeepCopy<T>(T source)
         {

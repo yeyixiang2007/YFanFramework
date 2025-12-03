@@ -1,5 +1,9 @@
+using System;
 using System.IO;
+using System.Linq;
 using System.Text;
+using UnityEditor;
+using UnityEditor.Callbacks;
 using YFan.Utils;
 
 namespace YFan.Editor.Config
@@ -10,9 +14,9 @@ namespace YFan.Editor.Config
     public static class ConfigCodeGen
     {
         /// <summary>
-        /// 生成配置文件的代码
+        /// 生成配置文件的 C# 代码
         /// </summary>
-        /// <param name="csvFile">配置文件的路径</param>
+        /// <param name="csvFile">CSV 文件路径</param>
         public static void GenerateCode(string csvFile)
         {
             string fileName = Path.GetFileNameWithoutExtension(csvFile);
@@ -23,6 +27,11 @@ namespace YFan.Editor.Config
             string[] names = lines[0].Split(',');
             string[] types = lines[1].Split(',');
             string[] comments = lines[2].Split(',');
+
+            // 获取 Key 的信息 (约定第一列为 Key)
+            string keyName = names[0].Trim();
+            string keyTypeRaw = types[0].Trim();
+            string keyType = ParseType(keyTypeRaw);
 
             StringBuilder sb = new StringBuilder();
 
@@ -50,33 +59,87 @@ namespace YFan.Editor.Config
 
             // --- 生成容器类  ---
             sb.AppendLine($"    [CreateAssetMenu(menuName = \"YFan/Config/{fileName}Table\")]");
-            sb.AppendLine($"    public class {fileName}Table : ConfigBase<{fileName}>");
+            sb.AppendLine($"    public class {fileName}Table : ConfigBase<{keyType}, {fileName}>");
             sb.AppendLine("    {");
             sb.AppendLine("        public override void Init()");
             sb.AppendLine("        {");
-            sb.AppendLine($"            _dict = new Dictionary<int, {fileName}>();");
+            sb.AppendLine($"            _dict = new Dictionary<{keyType}, {fileName}>();");
             sb.AppendLine("            foreach (var item in Items)");
             sb.AppendLine("            {");
-            sb.AppendLine("                // 约定：第一列必须是 Id (int)");
-            sb.AppendLine("                if (!_dict.ContainsKey(item.Id)) _dict.Add(item.Id, item);");
+            sb.AppendLine($"                if (!_dict.ContainsKey(item.{keyName})) _dict.Add(item.{keyName}, item);");
             sb.AppendLine("            }");
             sb.AppendLine("        }");
             sb.AppendLine("    }");
 
             sb.AppendLine("}"); // End Namespace
 
-            // 写入文件
             if (!Directory.Exists(ConfigKeys.CodePath)) Directory.CreateDirectory(ConfigKeys.CodePath);
             File.WriteAllText(Path.Combine(ConfigKeys.CodePath, $"{fileName}Table.cs"), sb.ToString());
 
-            YLog.Info($"代码生成完毕: {fileName}Table.cs", "ConfigCodeGen");
+            MarkForImport(csvFile);
+
+            YLog.Info($"代码生成完毕: {fileName}Table.cs (Key: {keyType})", "ConfigCodeGen");
         }
 
+        /// <summary>
+        /// 标记文件为需要导入
+        /// </summary>
+        /// <param name="csvFile">CSV 文件路径</param>
+        private static void MarkForImport(string csvFile)
+        {
+            string current = EditorPrefs.GetString(ConfigKeys.PendingFilesKey, "");
+            if (!current.Split(';').Contains(csvFile))
+            {
+                if (!string.IsNullOrEmpty(current)) current += ";";
+                current += csvFile;
+                EditorPrefs.SetString(ConfigKeys.PendingFilesKey, current);
+            }
+        }
+
+        /// <summary>
+        /// 当脚本重新加载时，执行挂起的导入任务
+        /// </summary>
+        [DidReloadScripts]
+        private static void OnScriptsReloaded()
+        {
+            if (!EditorPrefs.HasKey(ConfigKeys.PendingFilesKey)) return;
+
+            string fileString = EditorPrefs.GetString(ConfigKeys.PendingFilesKey, "");
+            EditorPrefs.DeleteKey(ConfigKeys.PendingFilesKey);
+
+            if (string.IsNullOrEmpty(fileString)) return;
+
+            EditorApplication.delayCall += () =>
+            {
+                var files = fileString.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                bool hasImported = false;
+
+                foreach (var file in files)
+                {
+                    if (File.Exists(file))
+                    {
+                        ConfigImporter.ImportData(file);
+                        hasImported = true;
+                    }
+                }
+
+                if (hasImported)
+                {
+                    AssetDatabase.Refresh();
+                    YLog.Info("编译完成，已自动执行挂起的数据导入任务。", "ConfigCodeGen");
+                }
+            };
+        }
+
+        /// <summary>
+        /// 根据 CSV 中的类型字符串解析为 C# 类型
+        /// </summary>
+        /// <param name="csvType">CSV 中的类型字符串</param>
+        /// <returns>解析后的 C# 类型字符串</returns>
         private static string ParseType(string csvType)
         {
             csvType = csvType.Trim();
 
-            // 持 List<int> 或 int[] 写法
             if (csvType.StartsWith("List<") && csvType.EndsWith(">"))
             {
                 return csvType;
@@ -87,7 +150,6 @@ namespace YFan.Editor.Config
                 return $"List<{ParseType(elementType)}>";
             }
 
-            // 其他基础类型
             switch (csvType.ToLower())
             {
                 case "int": return "int";

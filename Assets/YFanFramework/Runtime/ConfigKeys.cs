@@ -6,7 +6,7 @@ namespace YFan
     public static class ConfigKeys
     {
         // --- MonoUtil 配置 ---
-        public const string MonoUtilRuntime = "[YFan.MonoUtil]"; // 全局 MonoUtil 单例，用于运行时添加 MonoBehaviour
+        public const string MonoUtilRuntime = "MonoUtil_Runtime"; // 全局 MonoUtil 单例，用于运行时添加 MonoBehaviour
 
         // --- SaveUtil 配置 ---
         public const string SaveRootDir = "Saves"; // 存档根目录

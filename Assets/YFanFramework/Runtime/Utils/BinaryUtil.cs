@@ -8,24 +8,37 @@ namespace YFan.Utils
 {
     /// <summary>
     /// 二进制数据处理工具
-    /// * 提供 对象/字符串 <-> 二进制 的转换
-    /// * 提供 AES 加密/解密
-    /// * 提供 GZip 压缩/解压
-    /// * 提供 MD5 哈希计算
-    /// * 提供 二进制文件读写
+    /// + 提供 对象/字符串 <-> 二进制 的转换
+    /// + 提供 AES 加密/解密
+    /// + 提供 GZip 压缩/解压
+    /// + 提供 MD5 哈希计算
+    /// + 提供 二进制文件读写
     /// </summary>
     public static class BinaryUtil
     {
-        #region 转换 (Convert)
+        #region 转换 (JSON -> Bytes)
 
         /// <summary>
-        /// 对象 -> 二进制 (基于 JSON 序列化)
+        /// 对象 -> 二进制数据
+        /// (实现：Object -> JSON String -> UTF8 Bytes)
         /// </summary>
         public static byte[] ToBytes(object obj)
         {
             if (obj == null) return null;
+            // 复用 JSONUtil 的序列化逻辑
             string json = JSONUtil.ToJson(obj);
             return Encoding.UTF8.GetBytes(json);
+        }
+
+        /// <summary>
+        /// 二进制数据 -> 对象
+        /// (实现：UTF8 Bytes -> JSON String -> Object)
+        /// </summary>
+        public static T ToObject<T>(byte[] bytes)
+        {
+            if (bytes == null || bytes.Length == 0) return default;
+            string json = Encoding.UTF8.GetString(bytes);
+            return JSONUtil.FromJson<T>(json);
         }
 
         /// <summary>
@@ -35,16 +48,6 @@ namespace YFan.Utils
         {
             if (string.IsNullOrEmpty(str)) return null;
             return Encoding.UTF8.GetBytes(str);
-        }
-
-        /// <summary>
-        /// 二进制 -> 对象
-        /// </summary>
-        public static T ToObject<T>(byte[] bytes)
-        {
-            if (bytes == null || bytes.Length == 0) return default;
-            string json = Encoding.UTF8.GetString(bytes);
-            return JSONUtil.FromJson<T>(json);
         }
 
         /// <summary>

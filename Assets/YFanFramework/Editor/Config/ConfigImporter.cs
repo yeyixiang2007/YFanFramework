@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 using YFan.Utils;
@@ -11,25 +12,19 @@ namespace YFan.Editor.Config
 {
     /// <summary>
     /// 配置文件导入器
-    /// 1. 读取 CSV 文件
-    /// 2. 基于表头建立 字段名 -> 列索引 的映射字典
-    /// 3. 基于类型行建立 字段名 -> 类型 的映射字典
-    /// 4. 遍历所有数据行，基于映射字典赋值
-    /// 5. 赋值并保存 ScriptableObject
     /// </summary>
     public static class ConfigImporter
     {
         /// <summary>
-        /// 导入配置数据
+        /// 导入配置文件数据
         /// </summary>
-        /// <param name="csvFile"></param>
+        /// <param name="csvFile">CSV 文件路径</param>
         public static void ImportData(string csvFile)
         {
             string fileName = Path.GetFileNameWithoutExtension(csvFile);
             string className = $"YFan.Base.{fileName}";
             string tableClassName = $"YFan.Base.{fileName}Table";
 
-            // 反射获取类型
             Type dataType = GetTypeByString(className);
             Type tableType = GetTypeByString(tableClassName);
 
@@ -39,7 +34,6 @@ namespace YFan.Editor.Config
                 return;
             }
 
-            // 准备 ScriptableObject
             if (!Directory.Exists(ConfigKeys.AssetPath)) Directory.CreateDirectory(ConfigKeys.AssetPath);
             string assetFullPath = Path.Combine(ConfigKeys.AssetPath, $"{fileName}.asset");
 
@@ -50,21 +44,15 @@ namespace YFan.Editor.Config
                 AssetDatabase.CreateAsset(tableInstance, assetFullPath);
             }
 
-            // 读取 CSV
             string[] lines = File.ReadAllLines(csvFile, System.Text.Encoding.UTF8);
             if (lines.Length < 4)
             {
                 YLog.Warn($"表格数据为空或不足 4 行。文件: {csvFile}");
             }
 
-            // 建立 表头 -> 列索引 的映射字典
-
-            // 获取字段名行 (第1行)
             string[] headerNames = lines.Length > 0 ? lines[0].Split(',') : new string[0];
-            // 获取类型行 (第2行)
             string[] typeNames = lines.Length > 1 ? lines[1].Split(',') : new string[0];
 
-            // 建立 字段名 -> 列索引 的映射字典
             Dictionary<string, int> columnMap = new Dictionary<string, int>();
             for (int i = 0; i < headerNames.Length; i++)
             {
@@ -75,7 +63,6 @@ namespace YFan.Editor.Config
                 }
             }
 
-            // 准备列表容器
             FieldInfo listField = tableType.GetField("Items", BindingFlags.Instance | BindingFlags.Public | BindingFlags.FlattenHierarchy);
             if (listField == null)
             {
@@ -85,29 +72,20 @@ namespace YFan.Editor.Config
 
             IList dataList = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(dataType));
 
-            // 遍历数据行 (从第4行开始)
             int successCount = 0;
             for (int i = 3; i < lines.Length; i++)
             {
                 string line = lines[i].Trim();
                 if (string.IsNullOrEmpty(line)) continue;
 
-                // 处理 CSV 逗号分隔 (简单 Split，不支持单元格内含逗号的情况)
-                string[] values = line.Split(',');
-
-                // 创建单行数据对象
+                string[] values = Regex.Split(line, ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
                 object dataObj = Activator.CreateInstance(dataType);
-
-                // 获取数据类的所有字段
                 var fields = dataType.GetFields(BindingFlags.Instance | BindingFlags.Public);
 
-                // 遍历所有字段，基于名称赋值
                 foreach (FieldInfo fieldInfo in fields)
                 {
-                    // 根据 C# 字段名，去 CSV 表头里找对应的列索引
                     if (columnMap.TryGetValue(fieldInfo.Name, out int colIndex))
                     {
-                        // 安全检查：防止 CSV 某一行数据缺失导致越界
                         if (colIndex >= values.Length || colIndex >= typeNames.Length)
                             continue;
 
@@ -118,7 +96,6 @@ namespace YFan.Editor.Config
                         {
                             object parsedValue = ParseValue(valueStr, typeStr);
 
-                            // 容错处理：值类型不能赋 null
                             if (parsedValue == null && fieldInfo.FieldType.IsValueType)
                             {
                                 parsedValue = Activator.CreateInstance(fieldInfo.FieldType);
@@ -131,18 +108,12 @@ namespace YFan.Editor.Config
                             YLog.Error($"赋值失败！行: {i + 1}, 字段: {fieldInfo.Name} (列{colIndex}), 值: {valueStr}\n错误: {ex.Message}", "ConfigImporter");
                         }
                     }
-                    else
-                    {
-                        // CSV 里没有这个字段（可能是新生成的代码，但 Excel 还没加列），给个警告或忽略
-                        // YLog.Warn($"CSV 中缺少字段: {fieldInfo.Name}，将使用默认值。");
-                    }
                 }
 
                 dataList.Add(dataObj);
                 successCount++;
             }
 
-            // 赋值并保存
             listField.SetValue(tableInstance, dataList);
             EditorUtility.SetDirty(tableInstance);
             AssetDatabase.SaveAssets();
@@ -151,20 +122,24 @@ namespace YFan.Editor.Config
         }
 
         /// <summary>
-        /// 根据字符串解析值为指定类型
+        /// 解析 CSV 中的值为指定类型
         /// </summary>
-        /// <param name="value"></param>
-        /// <param name="type"></param>
-        /// <returns></returns>
+        /// <param name="value">CSV 中的值</param>
+        /// <param name="type">目标类型</param>
+        /// <returns>解析后的对象</returns>
         private static object ParseValue(string value, string type)
         {
             if (string.IsNullOrEmpty(value)) return null;
             type = type.Trim();
-            value = value.Trim(); // 去除单元格可能存在的空格
+            value = value.Trim();
+
+            if (value.StartsWith("\"") && value.EndsWith("\"") && value.Length > 1)
+            {
+                value = value.Substring(1, value.Length - 2);
+            }
 
             try
             {
-                // List<T> 解析
                 if (type.StartsWith("List<") && type.EndsWith(">"))
                 {
                     string elementTypeStr = type.Substring(5, type.Length - 6);
@@ -193,7 +168,6 @@ namespace YFan.Editor.Config
                     {
                         if (string.IsNullOrWhiteSpace(item)) continue;
                         object elementValue = ParseValue(item, elementTypeStr);
-                        // 如果 List 元素解析失败，这里也会得到 null，需要注意
                         if (elementValue != null) list.Add(elementValue);
                     }
                     return list;
@@ -209,7 +183,7 @@ namespace YFan.Editor.Config
                 {
                     case "int":
                         if (int.TryParse(value, out int iRes)) return iRes;
-                        return 0; // 解析失败给默认值
+                        return 0;
                     case "float":
                         if (float.TryParse(value, out float fRes)) return fRes;
                         return 0f;
@@ -228,7 +202,6 @@ namespace YFan.Editor.Config
             }
             catch
             {
-                // 仅返回 null，让外层决定是否报错或给默认值
                 return null;
             }
         }
@@ -236,8 +209,8 @@ namespace YFan.Editor.Config
         /// <summary>
         /// 根据字符串获取类型
         /// </summary>
-        /// <param name="typeName"></param>
-        /// <returns></returns>
+        /// <param name="typeName">类型名称</param>
+        /// <returns>对应的类型</returns>
         private static Type GetTypeByString(string typeName)
         {
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())

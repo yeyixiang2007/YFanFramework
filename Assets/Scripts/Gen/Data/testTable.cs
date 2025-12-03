@@ -5,27 +5,24 @@ using UnityEngine;
 namespace YFan.Base
 {
     [Serializable]
-    public class test
+    public class Test
     {
-        /// <summary> 1 </summary>
+        /// <summary> 编号 </summary>
         public int Id;
-        /// <summary> 叶以翔 </summary>
+        /// <summary> 名字 </summary>
         public string Name;
-        /// <summary> 1 </summary>
-        public int Sex;
-        /// <summary> 15359029780 </summary>
-        public string Phone;
+        /// <summary> 描述 </summary>
+        public string Description;
     }
 
-    [CreateAssetMenu(menuName = "YFan/Config/testTable")]
-    public class testTable : ConfigBase<test>
+    [CreateAssetMenu(menuName = "YFan/Config/TestTable")]
+    public class TestTable : ConfigBase<int, Test>
     {
         public override void Init()
         {
-            _dict = new Dictionary<int, test>();
+            _dict = new Dictionary<int, Test>();
             foreach (var item in Items)
             {
-                // 约定：第一列必须是 Id (int)
                 if (!_dict.ContainsKey(item.Id)) _dict.Add(item.Id, item);
             }
         }
