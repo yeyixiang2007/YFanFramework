@@ -1,4 +1,5 @@
 using UnityEditor;
+using YFan.Utils;
 
 namespace YFan.Editor
 {
@@ -21,10 +22,26 @@ namespace YFan.Editor
 
         protected virtual void OnGUI()
         {
+            if (_serializedObject == null || _serializedObject.targetObject == null)
+            {
+                _serializedObject = new SerializedObject(this);
+                _renderer = new YFanUIRenderer(this, _serializedObject);
+            }
+
             if (_renderer != null)
             {
-                // 绘制通用的属性 UI
-                _renderer.Draw();
+                try
+                {
+                    _renderer.Draw();
+                }
+                catch (System.Exception e)
+                {
+                    // 捕获布局错误，防止满屏报错
+                    if (e.GetType().Name != "ArgumentException") // 忽略布局计算中的临时参数错误
+                    {
+                        YLog.Error($"UI布局错误: {e}", "YFanEditorWindow");
+                    }
+                }
             }
         }
     }

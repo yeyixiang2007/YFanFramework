@@ -4,11 +4,10 @@
     "references": [
         "QFramework",
         "UniTask",
+        "UniTask.Addressables",
         "Unity.Addressables",
         "Unity.ResourceManager",
-        "Unity.InputSystem",
-        "Unity.TextMeshPro",
-        "Newtonsoft.Json"
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

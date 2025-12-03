@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 using YFan.Base;
+using YFan.Modules;
 
 namespace YFan.Utils
 {
@@ -49,11 +50,6 @@ namespace YFan.Utils
         // 存档根目录
         private static string RootDir => Path.Combine(Application.persistentDataPath, ConfigKeys.SaveRootDir);
 
-        // 元数据文件后缀
-        private const string META_EXT = ".meta";
-        // 数据文件后缀
-        private const string DATA_EXT = ".dat";
-
         #region 核心 API
 
         /// <summary>
@@ -68,8 +64,8 @@ namespace YFan.Utils
             EnsureDir();
 
             string baseName = GetSaveFileName(slotName);
-            string dataPath = Path.Combine(RootDir, baseName + DATA_EXT);
-            string metaPath = Path.Combine(RootDir, baseName + META_EXT);
+            string dataPath = Path.Combine(RootDir, baseName + ConfigKeys.SaveDataExt);
+            string metaPath = Path.Combine(RootDir, baseName + ConfigKeys.SaveMetaExt);
 
             try
             {
@@ -115,7 +111,7 @@ namespace YFan.Utils
         public static T Load<T>(string slotName)
         {
             string baseName = GetSaveFileName(slotName);
-            string dataPath = Path.Combine(RootDir, baseName + DATA_EXT);
+            string dataPath = Path.Combine(RootDir, baseName + ConfigKeys.SaveDataExt);
 
             if (!File.Exists(dataPath))
             {
@@ -147,7 +143,7 @@ namespace YFan.Utils
         {
             EnsureDir();
             var list = new List<SaveMetadata>();
-            var files = Directory.GetFiles(RootDir, "*" + META_EXT);
+            var files = Directory.GetFiles(RootDir, "*" + ConfigKeys.SaveMetaExt);
 
             foreach (var file in files)
             {
@@ -170,8 +166,8 @@ namespace YFan.Utils
         public static void Delete(string slotName)
         {
             string baseName = GetSaveFileName(slotName);
-            string dataPath = Path.Combine(RootDir, baseName + DATA_EXT);
-            string metaPath = Path.Combine(RootDir, baseName + META_EXT);
+            string dataPath = Path.Combine(RootDir, baseName + ConfigKeys.SaveDataExt);
+            string metaPath = Path.Combine(RootDir, baseName + ConfigKeys.SaveMetaExt);
 
             if (File.Exists(dataPath)) File.Delete(dataPath);
             if (File.Exists(metaPath)) File.Delete(metaPath);
@@ -225,6 +221,11 @@ namespace YFan.Utils
                 slotName = slotName.Replace(c, '_');
             }
             return $"Save_{slotName}";
+        }
+
+        internal static void Save(object saveSlotName, InputSettingsData settingsData, string inputSettingSaveNote)
+        {
+            throw new NotImplementedException();
         }
 
         #endregion

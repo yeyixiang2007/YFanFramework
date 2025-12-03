@@ -16,7 +16,17 @@ MonoBehaviour:
   m_Data:
     m_SerializedData: []
   m_GUID: 0f060d87720599f4191e8b14db25ffe0
-  m_SerializeEntries: []
+  m_SerializeEntries:
+  - m_GUID: 0cf90279a1726414a897b48718765ab5
+    m_Address: Cube
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e605395cc25347f4b8e0820f13ade024
+    m_Address: Input_GlobalActions
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: 530b6d117391baf48a5a2da90587b7df, type: 2}
   m_SchemaSet:

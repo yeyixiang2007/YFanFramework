@@ -33,10 +33,10 @@
     *   开发 Editor 窗口，配置模板路径。
     *   实现 **ScriptTemplate**：定义 Model, System, Controller, Event 的代码模板。
     *   实现一键生成逻辑：根据命名自动创建文件、写入基础结构。
-2.  **反射与绑定基础**
+<!-- 2.  **反射与绑定基础**
     *   实现 **`AutoModuleBinder`**：
         *   **初期**：使用反射在 Runtime 扫描注册（快速实现）。
-        *   **后期优化**：结合 CodeGenKit，改为“编译前生成静态注册代码”（解决反射性能问题）。
+        *   **后期优化**：结合 CodeGenKit，改为“编译前生成静态注册代码”（解决反射性能问题）。 -->
 3.  **数据与配置基础**
     <!-- *   **`JSONUtil`**：封装 Newtonsoft.Json。 -->
     <!-- *   **`SaveUtil`**：实现基于 JSON 的多槽位存档读写。 -->
@@ -48,18 +48,18 @@
 ### 📦 第三阶段：核心系统 - 资源与输入 (Core Systems - I/O)
 **目标**：解决游戏“听、看、动”的最底层问题。
 
-1.  **AssetSystem (重中之重)**
+<!-- 1.  **AssetSystem (重中之重)**
     *   集成 Addressables。
     *   实现 **`AssetUtil`**：封装 `LoadAssetAsync<T>` 和 `Release`。
     *   实现**引用计数 (Reference Counting)**：确保加载/卸载的安全监控。
-    *   *注意：此时需决定同步加载策略（建议主要推异步）。*
-2.  **InputSystem**
+    *   *注意：此时需决定同步加载策略（建议主要推异步）。* -->
+<!-- 2.  **InputSystem**
     *   集成 Unity **New Input System** Package。
     *   封装输入层：将物理按键映射为逻辑语义（如 `Action_Jump`, `Action_Fire`）。
-    *   实现输入事件分发。
-3.  **AudioSystem**
+    *   实现输入事件分发。 -->
+<!-- 3.  **AudioSystem**
     *   基于 `AssetSystem` 实现音频加载。
-    *   实现对象池（AudioSource Pool）和防爆音逻辑。
+    *   实现对象池（AudioSource Pool）和防爆音逻辑。 -->
 
 *   🚩 **里程碑**：按下一个键，播放一段音效，音效资源是通过 Addressables 异步加载的。
 
@@ -67,15 +67,15 @@
 
 ### 🖼️ 第四阶段：UI 与 表现层 (UI & Presentation)
 **目标**：构建用户界面框架，这也是很多游戏代码量最大的地方。
-
+<!--
 1.  **UIManager**
     *   设计 UI 层级（Layer）：Bot, Mid, Top, System。
-    *   设计 **UI 栈 (Stack)**：实现 `Push`, `Pop` 逻辑，支持页面回退。
-2.  **UIAnimationSystem**
+    *   设计 **UI 栈 (Stack)**：实现 `Push`, `Pop` 逻辑，支持页面回退。 -->
+<!-- 2.  **UIAnimationSystem**
     *   引入 DOTween (作为底层) 或手写 Tween。
-    *   实现 `UIAnimationController`：封装位移、透明度变化的异步接口（返回 UniTask）。
-3.  **AutoUIBinder (Editor)**
-    *   开发编辑器工具：一键遍历 Prefab 节点，根据命名规则（如 `Btn_Start`）生成代码并挂载引用。
+    *   实现 `UIAnimationController`：封装位移、透明度变化的异步接口（返回 UniTask）。 -->
+<!-- 3.  **AutoUIBinder (Editor)**
+    *   开发编辑器工具：一键遍历 Prefab 节点，根据命名规则（如 `Btn_Start`）生成代码并挂载引用。 -->
     *   *优化点*：尝试使用 `SerializeReference` 优化绑定数据的存储。
 4.  **LocalizationSystem**
     *   设计多语言 Key-Value 配置表（JSON/CSV）。
@@ -90,7 +90,7 @@
 **目标**：处理复杂的游戏流程和角色控制。
 
 1.  **FlowSystem (FSM)**
-    *   实现 **`FSMUtil`**：纯 C# 状态机类。
+    <!-- *   实现 **`FSMUtil`**：纯 C# 状态机类。 -->
     *   实现 **FlowManager**：管理游戏全局流程（Init -> Login -> Lobby -> Battle）。
     *   **低代码支持**：
         *   利用 **`[SerializeReference]`**，在 Inspector 中直接配置状态列表和参数，无需每个状态都写单独的文件。

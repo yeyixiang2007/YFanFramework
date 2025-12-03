@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using QFramework;
 using UnityEngine;
+using YFan.Attributes;
 using YFan.Base;
 
 namespace YFan.Utils
@@ -34,6 +35,7 @@ namespace YFan.Utils
     /// 这里的 MonoUtil 仅作为 Unity 生命周期的 "转发器"
     /// 具体的异步逻辑全部使用 UniTask
     /// </summary>
+    [AutoRegister(typeof(IMonoUtil))]
     public class MonoUtil : IMonoUtil
     {
         private class MonoRunner : MonoBehaviour
@@ -70,7 +72,7 @@ namespace YFan.Utils
         {
             if (_runner == null)
             {
-                GameObject go = new GameObject(ConfigKeys.MonoUtil);
+                GameObject go = new GameObject(ConfigKeys.MonoUtilRuntime);
                 _runner = go.AddComponent<MonoRunner>();
                 UnityEngine.Object.DontDestroyOnLoad(go);
             }

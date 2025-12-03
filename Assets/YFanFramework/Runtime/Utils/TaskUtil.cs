@@ -180,5 +180,20 @@ namespace YFan.Utils
         }
 
         #endregion
+
+        #region 时间等待封装
+
+        /// <summary>
+        /// 延迟指定秒数 (封装 UniTask.Delay)
+        /// </summary>
+        /// <param name="seconds">秒数</param>
+        /// <param name="ignoreTimeScale">是否忽略时间缩放(受不受暂停影响)</param>
+        /// <param name="cancellationToken">取消令牌</param>
+        public static UniTask Delay(float seconds, bool ignoreTimeScale = false, CancellationToken cancellationToken = default)
+        {
+            return UniTask.Delay(TimeSpan.FromSeconds(seconds), ignoreTimeScale, PlayerLoopTiming.Update, cancellationToken);
+        }
+
+        #endregion
     }
 }

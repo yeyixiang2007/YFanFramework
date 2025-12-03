@@ -3,6 +3,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
+using YFan.Base;
 
 namespace YFan.Utils
 {
@@ -16,10 +17,6 @@ namespace YFan.Utils
     /// </summary>
     public static class BinaryUtil
     {
-        // 默认加密配置 (AES-128 需要 16字节的 Key 和 IV)
-        private const string DEFAULT_KEY = "YFan_Binary_Secret";
-        private const string DEFAULT_IV = "YFan_Binary_IV";
-
         #region 转换 (Convert)
 
         /// <summary>
@@ -69,14 +66,14 @@ namespace YFan.Utils
         /// </summary>
         /// <param name="data">原始数据</param>
         /// <param name="key">密钥 (任意字符串，内部会自动Hash处理)</param>
-        public static byte[] Encrypt(byte[] data, string key = DEFAULT_KEY)
+        public static byte[] Encrypt(byte[] data, string key = ConfigKeys.BinarySecretKey)
         {
             if (data == null || data.Length == 0) return null;
 
             try
             {
                 byte[] keyArray = GetMD5Hash(key);
-                byte[] ivArray = GetMD5Hash(DEFAULT_IV);
+                byte[] ivArray = GetMD5Hash(ConfigKeys.BinaryIV);
 
                 using (RijndaelManaged rDel = new RijndaelManaged())
                 {
@@ -101,14 +98,14 @@ namespace YFan.Utils
         /// <summary>
         /// AES 解密
         /// </summary>
-        public static byte[] Decrypt(byte[] data, string key = DEFAULT_KEY)
+        public static byte[] Decrypt(byte[] data, string key = ConfigKeys.BinarySecretKey)
         {
             if (data == null || data.Length == 0) return null;
 
             try
             {
                 byte[] keyArray = GetMD5Hash(key);
-                byte[] ivArray = GetMD5Hash(DEFAULT_IV);
+                byte[] ivArray = GetMD5Hash(ConfigKeys.BinaryIV);
 
                 using (RijndaelManaged rDel = new RijndaelManaged())
                 {

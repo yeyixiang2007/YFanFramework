@@ -1,4 +1,7 @@
+using Cysharp.Threading.Tasks;
 using QFramework;
+using YFan.Modules;
+using YFan.Runtime.Modules;
 using YFan.Utils;
 
 namespace YFan.Runtime.Base
@@ -7,15 +10,16 @@ namespace YFan.Runtime.Base
     {
         override protected void Init()
         {
-            if (RegisterUtils()) YLog.Info("基础工具注册成功", "YFanApp", "Init");
-            if (RegisterModules()) YLog.Info("架构模块注册成功", "YFanApp", "Init");
+            if (RegisterCoreUtils()) YLog.Info("基础工具注册成功", "YFanApp");
+            AutoModuleBinder.ScanAndRegister(this);
+            YLog.Info("架构模块注册成功", "YFanApp");
         }
 
         /// <summary>
         /// 注册基础工具（仅实例工具）
         /// </summary>
         /// <returns></returns>
-        private bool RegisterUtils()
+        private bool RegisterCoreUtils()
         {
             // 静态工具无需实例化
 
@@ -28,29 +32,26 @@ namespace YFan.Runtime.Base
             }
             catch (System.Exception e)
             {
-                YLog.Error("初始化日志工具失败：" + e.Message, "YFanApp", "RegisterUtils");
+                YLog.Error("初始化日志工具失败：" + e.Message, "YFanApp");
                 return false;
             }
 
             try
             {
-                RegisterUtility<IMonoUtil>(new MonoUtil()); // 初始化 MonoUtil
+                // 初始化 AssetUtil (资源加载)
+                var assetUtil = new AssetUtil();
+                RegisterUtility<IAssetUtil>(assetUtil);
+
+                // 立即触发 Addressables 初始化，确保后续加载可用
+                // 使用 Forget() 不阻塞主线程，Addressables 内部会处理并发
+                assetUtil.InitializeAsync().Forget();
             }
             catch (System.Exception e)
             {
-                YLog.Error("初始化 MonoUtil 失败：" + e.Message, "YFanApp", "RegisterUtils");
+                YLog.Error("初始化 AssetUtil 失败：" + e.Message, "YFanApp");
                 return false;
             }
 
-            return true;
-        }
-
-        /// <summary>
-        /// 注册模块
-        /// </summary>
-        /// <returns></returns>
-        private bool RegisterModules()
-        {
             return true;
         }
     }
