@@ -11,7 +11,6 @@ using YFan.Utils;
 public class CounterController : UIAbstractController
 {
     [UIBind("Txt_Count")] private TMP_Text Txt_Count;
-    [UIBind("Btn_Stop")] private Button Btn_Stop;
 
     [YReadOnly] private int CurrentValue = 0;
     private CancellationTokenSource _autoAddCts; // 用于控制自动增加任务的取消

@@ -5,7 +5,6 @@ using QFramework;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using YFan.Attributes;
-using YFan.Base;
 using YFan.Utils;
 
 namespace YFan.Modules

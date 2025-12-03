@@ -35,11 +35,11 @@ public class GameEntry : MonoBehaviour
     {
         // 初始化 YFanFramework
         YFanApp.Instance.Init();
-        
+
         // 获取系统模块
         var audioSystem = YFanApp.Instance.GetSystem<IAudioSystem>();
         var inputSystem = YFanApp.Instance.GetSystem<IInputSystem>();
-        
+
         // 获取工具类
         var logUtil = YFanApp.Instance.GetUtility<ILogUtil>();
         var assetUtil = YFanApp.Instance.GetUtility<IAssetUtil>();
@@ -127,7 +127,7 @@ Player.Move(moveDir);
 inputSystem.BindAction("Fire", ctx => Player.Fire());
 
 // 按键重绑定
-inputSystem.StartRebind("Jump", 0, 
+inputSystem.StartRebind("Jump", 0,
     newKey => Debug.Log($"Jump 键已更改为: {newKey}"),
     () => Debug.Log("改键取消")
 );
@@ -152,7 +152,7 @@ public class MySystem : AbstractSystem, IMySystem
     {
         // 系统初始化
     }
-    
+
     public void DoSomething()
     {
         // 实现功能
@@ -177,19 +177,19 @@ public class MainMenuController : UIAbstractController
     [UIBind] private Button btnSettings;
     [UIBind("TxtTitle")] private Text titleText;
     [UIBind] private GameObject loadingPanel;
-    
+
     void Start()
     {
         titleText.text = "游戏主菜单";
     }
-    
+
     [BindClick("btnStart")]
     private void OnStartClick()
     {
         loadingPanel.SetActive(true);
         LoadGameAsync().Forget();
     }
-    
+
     [BindClick("btnSettings")]
     private void OnSettingsClick()
     {
@@ -198,7 +198,113 @@ public class MainMenuController : UIAbstractController
 }
 ```
 
-### 2.6 任务工具 (TaskUtil)
+### 2.6 UI管理器 (UIManager)
+
+UIManager 提供了 UI 面板的管理功能，支持普通打开/关闭和栈式管理（Push/Pop）。
+
+#### 创建UI面板
+
+所有UI面板都应继承自`BasePanel`类：
+
+```csharp
+using YFan.Runtime.Modules;
+using YFan.Attributes;
+using UnityEngine.UI;
+
+public class MainMenuPanel : BasePanel
+{
+    // 指定面板层级
+    public override UILayer Layer => UILayer.Mid;
+
+    // 可选：自定义Addressable资源Key（默认使用类名）
+    // public override string AssetKey => "CustomMainMenuKey";
+
+    [UIBind] private Button btnStart;
+    [UIBind] private Button btnSettings;
+    [UIBind] private Button btnQuit;
+
+    protected override void OnInit()
+    {
+        // 面板初始化（仅调用一次）
+    }
+
+    protected override void OnHide()
+    {
+        // 面板被新面板覆盖时调用（栈式管理）
+    }
+
+    protected override void OnShow()
+    {
+        // 面板从覆盖状态恢复时调用（栈式管理）
+    }
+
+    [BindClick("btnStart")]
+    private void OnStartClick()
+    {
+        // 获取UI管理器并打开游戏面板
+        var uiManager = YFanApp.Instance.GetSystem<IUIManager>();
+        uiManager.Push<GamePanel>().Forget();
+    }
+
+    [BindClick("btnSettings")]
+    private void OnSettingsClick()
+    {
+        // 打开设置面板
+        var uiManager = YFanApp.Instance.GetSystem<IUIManager>();
+        uiManager.Open<SettingsPanel>().Forget();
+    }
+
+    [BindClick("btnQuit")]
+    private void OnQuitClick()
+    {
+        Application.Quit();
+    }
+}
+```
+
+#### 使用UIManager
+
+```csharp
+using YFan.Runtime.Modules;
+using Cysharp.Threading.Tasks;
+
+// 获取 UI 管理器
+var uiManager = YFanApp.Instance.GetSystem<IUIManager>();
+
+// 普通打开面板
+await uiManager.Open<MainMenuPanel>();
+await uiManager.Open<SettingsPanel>(new UIPanelData { /* 面板数据 */ });
+
+// 关闭面板
+uiManager.Close<MainMenuPanel>();
+
+// 获取已加载的面板
+var settingsPanel = uiManager.GetPanel<SettingsPanel>();
+if (settingsPanel != null)
+{
+    // 操作面板
+}
+
+// 栈式管理（用于场景切换）
+// 推入新面板，当前面板自动隐藏
+await uiManager.Push<GamePanel>();
+await uiManager.Push<PausePanel>();
+
+// 弹出当前面板，上一个面板自动显示
+uiManager.Pop(); // 显示 GamePanel
+uiManager.Pop(); // 显示 MainMenuPanel
+```
+
+#### UI层级 (UILayer)
+
+UILayer 定义了面板的渲染和交互顺序：
+
+- `UILayer.Bot` - 底层：背景、主地图等
+- `UILayer.Mid` - 中层：普通窗口、背包、功能界面等
+- `UILayer.Top` - 顶层：弹窗、提示框等
+- `UILayer.System` - 系统层：Loading、断线重连、Debug信息等
+
+### 2.7 任务工具 (TaskUtil)
 
 提供安全的异步任务执行和重试机制。
 
@@ -267,7 +373,17 @@ string audioSettingSaveSlot = ConfigKeys.AudioSettingSaveSlot;
 | 预加载 | ✅ 已实现 | 支持按标签预加载资源 |
 | 资源释放 | ✅ 已实现 | 安全的资源释放机制 |
 
-### 4.4 存档系统 (SaveSystem)
+### 4.4 UI管理器 (UIManager)
+
+| 功能 | 状态 | 描述 |
+|------|------|------|
+| 面板打开/关闭 | ✅ 已实现 | 支持普通面板的打开和关闭 |
+| 栈式管理 | ✅ 已实现 | 支持 Push/Pop 方式管理面板层级 |
+| 面板缓存 | ✅ 已实现 | 自动缓存已加载的面板实例 |
+| UI层级管理 | ✅ 已实现 | 支持多种UI层级（System、Top、Mid、Bottom） |
+| 面板数据传递 | ✅ 已实现 | 支持打开面板时传递数据 |
+
+### 4.5 存档系统 (SaveSystem)
 
 | 功能 | 状态 | 描述 |
 |------|------|------|
@@ -395,5 +511,5 @@ A: 在初始化时调用 `YLog.EnableSaveToFile(true)`
 
 ---
 
-**更新日期**: 2024-01-01  
+**更新日期**: 2024-01-01
 **版本**: 1.0.0

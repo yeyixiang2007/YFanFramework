@@ -89,11 +89,11 @@
 ### 🧠 第五阶段：游戏逻辑核心 (Gameplay Core)
 **目标**：处理复杂的游戏流程和角色控制。
 
-1.  **FlowSystem (FSM)**
+<!-- 1.  **FlowSystem (FSM)**
     <!-- *   实现 **`FSMUtil`**：纯 C# 状态机类。 -->
     *   实现 **FlowManager**：管理游戏全局流程（Init -> Login -> Lobby -> Battle）。
     *   **低代码支持**：
-        *   利用 **`[SerializeReference]`**，在 Inspector 中直接配置状态列表和参数，无需每个状态都写单独的文件。
+        *   利用 **`[SerializeReference]`**，在 Inspector 中直接配置状态列表和参数，无需每个状态都写单独的文件。 -->
 2.  **AnimationSystem (Character)**
     *   封装 Animator。
     *   结合 FSM，通过状态机驱动动画参数。

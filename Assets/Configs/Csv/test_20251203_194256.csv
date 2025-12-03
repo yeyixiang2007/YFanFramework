@@ -1,0 +1,4 @@
+﻿Id,Name,Description
+int,string,string
+编号,名字,描述
+1001,TestItem,测试配置

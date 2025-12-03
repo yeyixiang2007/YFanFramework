@@ -5,7 +5,6 @@ using Cysharp.Threading.Tasks;
 using QFramework;
 using UnityEngine;
 using YFan.Attributes;
-using YFan.Base;
 using YFan.Utils;
 
 namespace YFan.Modules

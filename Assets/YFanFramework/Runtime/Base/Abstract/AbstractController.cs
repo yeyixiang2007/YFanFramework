@@ -16,21 +16,4 @@ namespace YFan.Runtime.Base.Abstract
         /// <returns>架构实例</returns>
         public IArchitecture GetArchitecture() => YFanApp.Interface;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }

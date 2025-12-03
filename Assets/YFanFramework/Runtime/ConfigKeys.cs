@@ -1,4 +1,4 @@
-namespace YFan.Base
+namespace YFan
 {
     /// <summary>
     /// 配置键名常量

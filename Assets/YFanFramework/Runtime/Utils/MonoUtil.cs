@@ -3,7 +3,6 @@ using System.Collections;
 using QFramework;
 using UnityEngine;
 using YFan.Attributes;
-using YFan.Base;
 
 namespace YFan.Utils
 {
