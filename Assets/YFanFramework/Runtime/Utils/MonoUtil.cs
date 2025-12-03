@@ -13,30 +13,60 @@ namespace YFan.Utils
     /// </summary>
     public interface IMonoUtil : IUtility
     {
-        // --- Update 驱动 ---
+        /// <summary>
+        /// 添加 Update 事件监听
+        /// </summary>
+        /// <param name="action"></param>
         void AddUpdateListener(Action action);
+
+        /// <summary>
+        /// 移除 Update 事件监听
+        /// </summary>
+        /// <param name="action"></param>
         void RemoveUpdateListener(Action action);
 
-        // --- FixedUpdate 驱动 ---
+        /// <summary>
+        /// 添加 FixedUpdate 事件监听
+        /// </summary>
+        /// <param name="action"></param>
         void AddFixedUpdateListener(Action action);
+
+        /// <summary>
+        /// 移除 FixedUpdate 事件监听
+        /// </summary>
+        /// <param name="action"></param>
         void RemoveFixedUpdateListener(Action action);
 
-        // --- Coroutine 驱动（仅用于兼容旧插件） ---
+        /// <summary>
+        /// 添加 Coroutine 事件监听
+        /// </summary>
+        /// <param name="routine"></param>
+        /// <returns></returns>
         Coroutine StartCoroutine(IEnumerator routine);
+
+        /// <summary>
+        /// 移除 Coroutine 事件监听
+        /// </summary>
+        /// <param name="routine"></param>
         void StopCoroutine(Coroutine routine);
 
-        // --- Application 事件驱动 ---
+        /// <summary>
+        /// 添加 ApplicationQuit 事件监听
+        /// </summary>
         event Action OnApplicationQuitEvent;
+
+        /// <summary>
+        /// 添加 ApplicationPause 事件监听
+        /// </summary>
         event Action<bool> OnApplicationPauseEvent;
     }
 
-    /// <summary>
-    /// 这里的 MonoUtil 仅作为 Unity 生命周期的 "转发器"
-    /// 具体的异步逻辑全部使用 UniTask
-    /// </summary>
     [AutoRegister(typeof(IMonoUtil))]
     public class MonoUtil : IMonoUtil
     {
+        /// <summary>
+        /// 运行时 MonoBehaviour 类，用于转发 Unity 生命周期事件
+        /// </summary>
         private class MonoRunner : MonoBehaviour
         {
             public event Action OnUpdateEvent;
@@ -65,7 +95,7 @@ namespace YFan.Utils
             }
         }
 
-        private static MonoRunner _runner;
+        private static MonoRunner _runner; // 运行时 MonoBehaviour 实例
 
         public MonoUtil()
         {

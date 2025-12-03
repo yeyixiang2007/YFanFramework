@@ -11,30 +11,39 @@ namespace YFan.Utils
 {
     /// <summary>
     /// 资产加载工具接口
-    /// * 负责管理资产的加载、缓存和引用计数
+    /// + 负责管理资产的加载、缓存和引用计数
     /// </summary>
     public interface IAssetUtil : IUtility
     {
         /// <summary>
         /// 初始化资产加载工具
-        /// * 必须在使用资产加载功能前调用
+        /// + 必须在使用资产加载功能前调用
         /// </summary>
         UniTask InitializeAsync();
 
         /// <summary>
         /// 异步加载资产
+        /// + 加载完成后，资产引用计数加一
+        /// + 使用方法：
+        ///   - 调用 LoadAsync 方法加载资产
+        ///   - 加载完成后，通过返回的 UniTask 获取资产实例
         /// </summary>
         UniTask<T> LoadAsync<T>(string key) where T : Object;
 
         /// <summary>
         /// 异步实例化资产
+        /// + 实例化后，资产引用计数加一
+        /// + 实例化完成后，资产引用计数减一
+        /// + 使用方法：
+        ///   - 调用 InstantiateAsync 方法实例化资产
+        ///   - 实例化完成后，通过返回的 UniTask 获取实例化后的 GameObject
         /// </summary>
         UniTask<GameObject> InstantiateAsync(string key, Transform parent = null, bool stayWorldPosition = false);
 
         /// <summary>
         /// 释放资产引用
-        /// * 调用后引用计数减一
-        /// * 引用计数为零时，资产将被释放
+        /// + 调用后引用计数减一
+        /// + 引用计数为零时，资产将被释放
         /// </summary>
         void Release(string key);
 
@@ -64,7 +73,9 @@ namespace YFan.Utils
 
         #region 字段
 
+        // 资产缓存
         private readonly Dictionary<string, AssetCacheData> _assetCache = new Dictionary<string, AssetCacheData>();
+        // 加载任务缓存
         private readonly Dictionary<string, UniTask<object>> _loadingTasks = new Dictionary<string, UniTask<object>>();
         private const string LogModule = "AssetUtil";
 
@@ -109,7 +120,7 @@ namespace YFan.Utils
                 return null;
             }
 
-            // 1. 检查缓存
+            // 检查缓存中是否已存在该资产，如果存在则直接返回
             if (_assetCache.TryGetValue(key, out var cacheData))
             {
                 if (cacheData.Asset is T resultAsset)
@@ -124,16 +135,16 @@ namespace YFan.Utils
                 }
             }
 
-            // 2. 并发保护：检查是否正在加载中
+            // 并发保护：检查是否正在加载中
+            // 如果正在加载中，等待加载完成后递归调用自己去命中缓存，确保引用计数逻辑统一
             if (_loadingTasks.TryGetValue(key, out var loadingTask))
             {
                 var result = await loadingTask;
-                // 任务完成后，递归调用自己去命中缓存（步骤1），确保引用计数逻辑统一
                 return await LoadAsync<T>(key);
             }
 
-            // 3. 开始新任务
-            // 注意：这里我们不直接 await taskSource，因为它会被转换消耗掉
+            // 开始新任务
+            // 注意不直接 await taskSource，因为它会被转换消耗掉
             var taskSource = LoadInternalAsync<T>(key);
 
             // 将 Task 转为 object 并“保鲜” (Preserve)
@@ -156,6 +167,12 @@ namespace YFan.Utils
             }
         }
 
+        /// <summary>
+        /// 内部加载方法，负责实际的加载操作
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="key"></param>
+        /// <returns></returns>
         private async UniTask<T> LoadInternalAsync<T>(string key) where T : Object
         {
             T result = null;
@@ -260,6 +277,7 @@ namespace YFan.Utils
                 YLog.Info($"Key: {kvp.Key} | Ref: {kvp.Value.RefCount}", LogModule);
             }
         }
+
         #endregion
     }
 }

@@ -11,6 +11,8 @@ namespace YFan.Runtime.Modules
     /// </summary>
     public interface IUIManager : ISystem
     {
+        #region 打开关闭面板
+
         /// <summary>
         /// 打开面板 (普通模式)
         /// 如果面板已在栈中，不会改变栈结构，仅显示
@@ -28,7 +30,9 @@ namespace YFan.Runtime.Modules
         /// </summary>
         T GetPanel<T>() where T : BasePanel;
 
-        // --- 栈操作 ---
+        #endregion
+
+        #region 栈操作
 
         /// <summary>
         /// 压入堆栈 (当前页面 Hide，新页面 Open)
@@ -44,5 +48,7 @@ namespace YFan.Runtime.Modules
         /// 清空堆栈 (只保留栈底或全清)
         /// </summary>
         void ClearStack();
+
+        #endregion
     }
 }

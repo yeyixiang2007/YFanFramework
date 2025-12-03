@@ -7,9 +7,9 @@ namespace YFan.Utils
 {
     /// <summary>
     /// 任务工具类，提供异步任务的安全执行、重试机制等功能。
-    /// * 支持流式调用，提高代码可读性。
-    /// * 提供异常捕获、取消令牌管理等功能。
-    /// * 设计为静态类，方便全局调用。
+    /// + 支持流式调用，提高代码可读性。
+    /// + 提供异常捕获、取消令牌管理等功能。
+    /// + 设计为静态类，方便全局调用。
     /// </summary>
     public static class TaskUtil
     {
@@ -17,8 +17,8 @@ namespace YFan.Utils
 
         /// <summary>
         /// 启动一个异步任务，不等待它完成（Fire-and-Forget）。
-        /// * 异常会被自动捕获并记录到 YLog。
-        /// * 支持流式调用: taskFunc.RunSafe("Module")
+        /// + 异常会被自动捕获并记录到 YLog。
+        /// + 支持流式调用: taskFunc.RunSafe("Module")
         /// </summary>
         public static void Run(this Func<UniTask> taskFunc, string moduleName = "Async")
         {
@@ -27,7 +27,7 @@ namespace YFan.Utils
 
         /// <summary>
         /// 启动一个已创建的 Task
-        /// * 支持流式调用: myTask.RunSafe("Module")
+        /// + 支持流式调用: myTask.RunSafe("Module")
         /// </summary>
         public static void Run(this UniTask task, string moduleName = "Async")
         {
@@ -41,7 +41,7 @@ namespace YFan.Utils
 
         /// <summary>
         /// 内部执行方法，处理异常和取消
-        /// * 支持流式调用: RunInternal(...)
+        /// + 支持流式调用: RunInternal(...)
         /// </summary>
         private static async UniTaskVoid RunInternal(UniTask task, string moduleName)
         {
@@ -65,7 +65,7 @@ namespace YFan.Utils
 
         /// <summary>
         /// 带有重试机制的执行
-        /// * 支持流式调用: myAction.Retry(...)
+        /// + 支持流式调用: myAction.Retry(...)
         /// </summary>
         public static async UniTask<T> Retry<T>(
             this Func<UniTask<T>> action, // 加了 this
@@ -93,7 +93,7 @@ namespace YFan.Utils
 
         /// <summary>
         /// 无返回值的重试
-        /// * 支持流式调用: myAction.Retry(...)
+        /// + 支持流式调用: myAction.Retry(...)
         /// </summary>
         public static async UniTask Retry(
             this Func<UniTask> action, // 加了 this
@@ -129,7 +129,7 @@ namespace YFan.Utils
 
         /// <summary>
         /// 安全取消 CancellationTokenSource
-        /// * 支持流式调用: cts.CancelSafe()
+        /// + 支持流式调用: cts.CancelSafe()
         /// </summary>
         public static void CancelSafe(ref CancellationTokenSource cts)
         {
@@ -150,7 +150,7 @@ namespace YFan.Utils
 
         /// <summary>
         /// 安全重新创建 CancellationTokenSource
-        /// * 支持流式调用: cts.Renew()
+        /// + 支持流式调用: cts.Renew()
         /// </summary>
         public static CancellationTokenSource Renew(ref CancellationTokenSource cts)
         {
@@ -165,7 +165,7 @@ namespace YFan.Utils
 
         /// <summary>
         /// 等待直到条件满足或超时
-        /// * 支持流式调用: await WaitUntil(...)
+        /// + 支持流式调用: await WaitUntil(...)
         /// </summary>
         public static async UniTask<bool> WaitUntil(Func<bool> predicate, float timeoutSeconds, PlayerLoopTiming timing = PlayerLoopTiming.Update)
         {

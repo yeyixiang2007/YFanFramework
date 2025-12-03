@@ -1,7 +1,5 @@
 using Cysharp.Threading.Tasks;
 using QFramework;
-using YFan.Modules;
-using YFan.Runtime.Modules;
 using YFan.Utils;
 
 namespace YFan.Runtime.Base
@@ -21,8 +19,6 @@ namespace YFan.Runtime.Base
         /// <returns></returns>
         private bool RegisterCoreUtils()
         {
-            // 静态工具无需实例化
-
             try
             {
                 // 初始化日志工具（基础工具，最先注册）

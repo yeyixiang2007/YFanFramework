@@ -5,7 +5,7 @@ namespace YFan.Modules
 {
     public interface IAudioSystem : ISystem
     {
-        // --- BGM 控制 ---
+        #region 背景音乐控制
 
         /// <summary>
         /// 播放背景音乐 (支持淡入淡出)
@@ -22,7 +22,9 @@ namespace YFan.Modules
         /// </summary>
         void PauseBGM(bool pause);
 
-        // --- 音效控制 ---
+        #endregion
+
+        #region 音效控制
 
         /// <summary>
         /// 播放音效 (Fire and Forget)
@@ -34,7 +36,10 @@ namespace YFan.Modules
         /// </summary>
         void PlaySound(AudioPlayParams param);
 
-        // --- 语音控制 ---
+        #endregion
+
+        #region 语音控制
+
         /// <summary>
         /// 播放语音/对白 (Fire and Forget)
         /// </summary>
@@ -45,7 +50,9 @@ namespace YFan.Modules
         /// </summary>
         void StopVoice();
 
-        // --- 设置 ---
+        #endregion
+
+        #region 设置
 
         /// <summary>
         /// 设置音量
@@ -66,5 +73,7 @@ namespace YFan.Modules
         /// 是否静音
         /// </summary>
         bool IsMute(AudioLayer layer);
+
+        #endregion
     }
 }

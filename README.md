@@ -4,6 +4,10 @@
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 ![Status](https://img.shields.io/badge/Status-Active-orange.svg)
 
+<p align="center">
+  <img src="logo.svg" alt="YFanFramework Logo" />
+</p>
+
 **YFanFramework** 是一个基于 Unity 的游戏开发框架，专为独立游戏开发者设计，提供了一套完整的 MVC 架构、工具集和系统模块，旨在帮助开发者快速构建高质量的游戏项目。
 
 它旨在解决中小型项目中的常见痛点：配置管理繁琐、存档不安全、UI 堆栈管理混乱以及资源加载异步地狱。框架提供了开箱即用的核心系统，代码清晰，易于扩展。
