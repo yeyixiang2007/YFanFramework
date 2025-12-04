@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Cysharp.Threading.Tasks;
 using QFramework;
 using UnityEngine;
@@ -18,23 +19,20 @@ namespace YFan.Runtime.Modules
         private GameObject _uiRoot;
         private Canvas _mainCanvas;
 
-        // 层级根节点容器
         private readonly Dictionary<UILayer, Transform> _layers = new Dictionary<UILayer, Transform>();
-        // 已加载的面板缓存
         private readonly Dictionary<string, BasePanel> _loadedPanels = new Dictionary<string, BasePanel>();
-        // UI 栈
         private readonly Stack<BasePanel> _panelStack = new Stack<BasePanel>();
 
         // --- 遮罩管理 ---
-        private GameObject _maskObj; // 遮罩物体
-        private Button _maskBtn;     // 遮罩按钮 (处理点击关闭)
-        private CanvasGroup _maskCG; // 控制遮罩显隐
+        private GameObject _maskObj;
+        private Button _maskBtn;
+        private CanvasGroup _maskCG;
 
         // --- 焦点管理 ---
-        // 记录每次 Push 前的焦点物体，Pop 时还原
         private readonly Stack<GameObject> _focusHistory = new Stack<GameObject>();
 
         private IAssetUtil _assetUtil => this.GetUtility<IAssetUtil>();
+        private IMonoUtil _monoUtil => this.GetUtility<IMonoUtil>(); // 用于监听 Update
 
         #endregion
 
@@ -42,7 +40,33 @@ namespace YFan.Runtime.Modules
         {
             InitUIRoot();
             InitMask();
+
+            // 注册返回键监听
+            _monoUtil.AddUpdateListener(OnUpdate);
+
             YLog.Info("UIManager Initialized", "UIManager");
+        }
+
+        protected override void OnDeinit()
+        {
+            _monoUtil.RemoveUpdateListener(OnUpdate);
+        }
+
+        private void OnUpdate()
+        {
+            // 处理 Android 返回键或 PC ESC 键
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                if (_panelStack.Count > 0)
+                {
+                    var topPanel = _panelStack.Peek();
+                    // 仅当面板可见、允许返回键、且交互未被阻挡时
+                    if (topPanel.IsVisible && topPanel.CanvasGroup.blocksRaycasts && topPanel.AllowSystemBack)
+                    {
+                        Pop();
+                    }
+                }
+            }
         }
 
         #region 初始化
@@ -65,7 +89,6 @@ namespace YFan.Runtime.Modules
 
             _uiRoot.AddComponent<GraphicRaycaster>();
 
-            // 确保 EventSystem 存在 (焦点管理必须)
             if (EventSystem.current == null)
             {
                 var eventSystem = new GameObject("EventSystem");
@@ -84,19 +107,19 @@ namespace YFan.Runtime.Modules
                 rect.offsetMin = Vector2.zero;
                 rect.offsetMax = Vector2.zero;
 
+                // 可以在这里挂载 SafeArea 脚本
+
                 _layers.Add(layer, layerGo.transform);
             }
         }
 
         private void InitMask()
         {
-            // 创建一个全局通用的遮罩
             _maskObj = new GameObject("UI_Blocker_Mask");
-            // 初始隐藏，不挂在任何层级下，动态调整
             _maskObj.transform.SetParent(_uiRoot.transform, false);
 
             var img = _maskObj.AddComponent<Image>();
-            img.color = new Color(0, 0, 0, 0.75f); // 黑色半透明
+            img.color = new Color(0, 0, 0, 0.75f);
 
             _maskBtn = _maskObj.AddComponent<Button>();
             _maskBtn.transition = Selectable.Transition.None;
@@ -124,10 +147,9 @@ namespace YFan.Runtime.Modules
             if (panel == null) return null;
 
             panel.transform.SetAsLastSibling();
-            panel.Open(data);
 
-            // 普通 Open 暂不处理复杂的栈式焦点和遮罩逻辑
-            // 如果希望普通 Open 也支持，需统一逻辑。这里建议 Open 用于非模态，Push 用于模态。
+            // 等待动画完成
+            await panel.OpenAsync(data);
 
             return panel as T;
         }
@@ -138,17 +160,22 @@ namespace YFan.Runtime.Modules
         {
             if (_loadedPanels.TryGetValue(panelName, out var panel))
             {
-                // 如果是栈顶面板，走 Pop 流程以保证焦点和遮罩正确
                 if (_panelStack.Count > 0 && _panelStack.Peek() == panel)
                 {
                     Pop();
                 }
                 else
                 {
-                    panel.Close();
-                    // 如果面板在栈中间（非法操作），这里暂不做移除，防止破坏栈结构
+                    // 使用 FireAndForget 执行关闭动画
+                    ClosePanelInternal(panel).Forget();
                 }
             }
+        }
+
+        private async UniTaskVoid ClosePanelInternal(BasePanel panel)
+        {
+            await panel.CloseAsync();
+            CheckDestroy(panel);
         }
 
         public T GetPanel<T>() where T : BasePanel
@@ -164,31 +191,29 @@ namespace YFan.Runtime.Modules
 
         public async UniTask<T> Push<T>(UIPanelData data = null) where T : BasePanel
         {
-            // 1. 记录当前焦点
             RecordCurrentFocus();
 
-            // 2. 暂停当前栈顶面板
+            // 1. 暂停当前栈顶
             if (_panelStack.Count > 0)
             {
                 var top = _panelStack.Peek();
-                top.Hide(); // 暂停/隐藏旧面板
+                top.Pause(); // 使用 Pause 而不是 Hide，逻辑更准确
             }
 
-            // 3. 加载新面板
+            // 2. 加载新面板
             BasePanel nextPanel = await GetOrCreatePanel<T>();
             if (nextPanel == null) return null;
 
             _panelStack.Push(nextPanel);
 
-            // 4. 处理遮罩 (关键步骤)
-            // 将面板移到其 Layer 的最前方
+            // 3. 处理遮罩
             nextPanel.transform.SetAsLastSibling();
             RefreshMaskState(nextPanel);
 
-            // 5. 打开面板
-            nextPanel.Open(data);
+            // 4. 异步打开
+            await nextPanel.OpenAsync(data);
 
-            // 6. 设置新焦点
+            // 5. 设置焦点
             SetPanelFocus(nextPanel);
 
             return nextPanel as T;
@@ -198,19 +223,31 @@ namespace YFan.Runtime.Modules
         {
             if (_panelStack.Count == 0) return;
 
+            // 弹出逻辑异步化处理
+            PopInternal().Forget();
+        }
+
+        private async UniTaskVoid PopInternal()
+        {
             // 1. 关闭当前栈顶
             var current = _panelStack.Pop();
-            current.Close();
+
+            // 等待关闭动画
+            await current.CloseAsync();
+
+            // 检查是否销毁
+            CheckDestroy(current);
 
             // 2. 恢复上一个面板
             BasePanel prev = null;
             if (_panelStack.Count > 0)
             {
                 prev = _panelStack.Peek();
-                prev.Show(); // Resume
+                prev.Show(); // 先确保 Visible = true
+                prev.Resume(); // 再恢复交互
             }
 
-            // 3. 刷新遮罩 (如果上一个面板需要遮罩，遮罩移到它下面；如果不需要或栈空，隐藏遮罩)
+            // 3. 刷新遮罩
             RefreshMaskState(prev);
 
             // 4. 恢复焦点
@@ -222,7 +259,8 @@ namespace YFan.Runtime.Modules
             while (_panelStack.Count > 0)
             {
                 var p = _panelStack.Pop();
-                p.Close();
+                p.CloseAsync().Forget();
+                CheckDestroy(p);
             }
             _focusHistory.Clear();
             RefreshMaskState(null);
@@ -231,41 +269,54 @@ namespace YFan.Runtime.Modules
 
         #endregion
 
-        #region 辅助逻辑 (Focus & Mask)
+        #region 资源管理与销毁
+
+        /// <summary>
+        /// 检查面板的缓存策略，决定是否销毁
+        /// </summary>
+        private void CheckDestroy(BasePanel panel)
+        {
+            if (panel.CachePolicy == UICachePolicy.DestroyOnClose)
+            {
+                string name = panel.GetType().Name;
+                if (_loadedPanels.ContainsKey(name))
+                {
+                    _loadedPanels.Remove(name);
+
+                    // 释放 Addressable 引用
+                    _assetUtil.Release(panel.AssetKey);
+
+                    UnityEngine.Object.Destroy(panel.gameObject);
+                }
+            }
+        }
+
+        #endregion
+
+        #region 辅助逻辑
 
         private void RefreshMaskState(BasePanel activePanel)
         {
             if (activePanel != null && activePanel.UseMask)
             {
-                // 启用遮罩
                 _maskObj.SetActive(true);
                 _maskCG.alpha = 1;
                 _maskCG.blocksRaycasts = true;
-
-                // 将遮罩移动到 activePanel 的同一个父节点下
                 _maskObj.transform.SetParent(activePanel.transform.parent, false);
-
-                // 设置顺序：activePanel 的索引 - 1
                 int index = activePanel.transform.GetSiblingIndex();
                 _maskObj.transform.SetSiblingIndex(Mathf.Max(0, index - 1));
-
-                // 确保 activePanel 在遮罩之上 (防止 index 计算误差)
-                // activePanel.transform.SetAsLastSibling(); // 不需要，因为上面刚 Set 过了，这里只要 Mask 足够靠后即可
             }
             else
             {
-                // 隐藏遮罩
                 _maskCG.alpha = 0;
                 _maskCG.blocksRaycasts = false;
                 _maskObj.SetActive(false);
-                // 移回 Root 防止干扰层级
                 _maskObj.transform.SetParent(_uiRoot.transform, false);
             }
         }
 
         private void OnMaskClick()
         {
-            // 只有栈顶面板允许点击遮罩关闭
             if (_panelStack.Count > 0)
             {
                 var top = _panelStack.Peek();
@@ -304,10 +355,9 @@ namespace YFan.Runtime.Modules
         {
             if (panel.DefaultFocus != null)
             {
-                // 延迟一帧设置，确保 UI 已经 Active 且 Layout 重建完成
                 UniTask.Create(async () =>
                 {
-                    await UniTask.Yield(); // 等待一帧
+                    await UniTask.Yield();
                     if (panel.IsVisible && panel.DefaultFocus != null)
                     {
                         EventSystem.current.SetSelectedGameObject(panel.DefaultFocus);
@@ -316,7 +366,6 @@ namespace YFan.Runtime.Modules
             }
             else
             {
-                // 如果没有指定焦点，为了防止手柄失控，最好清除选中
                 EventSystem.current.SetSelectedGameObject(null);
             }
         }
@@ -330,22 +379,29 @@ namespace YFan.Runtime.Modules
             string panelName = typeof(T).Name;
             if (_loadedPanels.TryGetValue(panelName, out var cachedPanel)) return cachedPanel;
 
-            GameObject panelGo = await _assetUtil.InstantiateAsync(panelName);
+            // TODO:为了获取配置 (AssetKey)，我们可能需要先反射一下 T，或者实例化后再读取
+            // 这里为了简单，假设 T 上挂了 Attribute，可以直接读取 Key
+            // 如果 AssetKey 是动态的，这里需要调整逻辑
+            var attr = typeof(T).GetCustomAttribute<UIConfigAttribute>();
+            string assetKey = attr?.AssetKey ?? panelName;
+            UILayer targetLayer = attr?.Layer ?? UILayer.Mid;
+
+            GameObject panelGo = await _assetUtil.InstantiateAsync(assetKey);
             if (panelGo == null)
             {
-                YLog.Error($"无法加载 UI 面板: {panelName}", "UIManager");
+                YLog.Error($"无法加载 UI 面板: {assetKey}", "UIManager");
                 return null;
             }
 
             T panel = panelGo.GetComponent<T>();
             if (panel == null)
             {
-                YLog.Error($"Prefab [{panelName}] 上缺少脚本 [{typeof(T).Name}]", "UIManager");
+                YLog.Error($"Prefab [{assetKey}] 上缺少脚本 [{typeof(T).Name}]", "UIManager");
                 UnityEngine.Object.Destroy(panelGo);
                 return null;
             }
 
-            if (_layers.TryGetValue(panel.Layer, out var layerRoot))
+            if (_layers.TryGetValue(targetLayer, out var layerRoot))
             {
                 panel.transform.SetParent(layerRoot, false);
             }

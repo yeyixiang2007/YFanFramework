@@ -21,7 +21,6 @@ namespace YFan.Utils
 
         static JSONUtil()
         {
-            // --- 初始化默认配置 ---
             DefaultSettings = new JsonSerializerSettings
             {
                 // 忽略循环引用 (防止序列化 GameObject/Transform 时死循环)
@@ -34,7 +33,6 @@ namespace YFan.Utils
                 Converters = { new StringEnumConverter() }
             };
 
-            // --- 初始化美化配置 ---
             _prettySettings = new JsonSerializerSettings
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,

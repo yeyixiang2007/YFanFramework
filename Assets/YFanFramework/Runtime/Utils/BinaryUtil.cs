@@ -25,7 +25,6 @@ namespace YFan.Utils
         public static byte[] ToBytes(object obj)
         {
             if (obj == null) return null;
-            // 复用 JSONUtil 的序列化逻辑
             string json = JSONUtil.ToJson(obj);
             return Encoding.UTF8.GetBytes(json);
         }
@@ -81,8 +80,8 @@ namespace YFan.Utils
                 {
                     rDel.Key = keyArray;
                     rDel.IV = ivArray;
-                    rDel.Mode = CipherMode.CBC;
-                    rDel.Padding = PaddingMode.PKCS7;
+                    rDel.Mode = CipherMode.CBC; // 块加密模式
+                    rDel.Padding = PaddingMode.PKCS7; // 填充模式，确保数据长度为块大小的整数倍
 
                     using (ICryptoTransform cTransform = rDel.CreateEncryptor())
                     {

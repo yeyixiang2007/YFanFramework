@@ -68,7 +68,7 @@ namespace YFan.Utils
 
             try
             {
-                // 1. 保存核心数据
+                // 保存核心数据
                 if (Mode == SaveMode.Json)
                 {
                     string json = JSONUtil.ToJson(data, true); // 美化格式
@@ -83,7 +83,7 @@ namespace YFan.Utils
                     BinaryUtil.WriteToFile(dataPath, encrypted);
                 }
 
-                // 2. 生成并保存元数据
+                // 生成并保存元数据
                 var meta = new SaveMetadata
                 {
                     FileName = baseName,
@@ -123,12 +123,12 @@ namespace YFan.Utils
                 // 尝试判断文件头来自动识别是 JSON 还是 Binary (简单容错)
                 // 这里为了简单，直接根据当前 Mode 尝试读取，失败则尝试另一种
 
-                // 1. 尝试按当前 Mode 读取
+                // 尝试按当前 Mode 读取
                 return ReadDataInternal<T>(dataPath, Mode);
             }
             catch
             {
-                // 2. 如果失败，尝试另一种模式 (防止改了 Mode 后读不出旧存档)
+                // 如果失败，尝试另一种模式 (防止改了 Mode 后读不出旧存档)
                 var fallbackMode = Mode == SaveMode.Json ? SaveMode.Binary : SaveMode.Json;
                 YLog.Warn($"按 {Mode} 读取失败，尝试使用 {fallbackMode}...", "SaveUtil");
                 return ReadDataInternal<T>(dataPath, fallbackMode);

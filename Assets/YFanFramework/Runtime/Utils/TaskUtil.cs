@@ -194,6 +194,16 @@ namespace YFan.Utils
             return UniTask.Delay(TimeSpan.FromSeconds(seconds), ignoreTimeScale, PlayerLoopTiming.Update, cancellationToken);
         }
 
+        /// <summary>
+        /// 延迟指定帧数 (封装 UniTask.Yield)
+        /// </summary>
+        /// <param name="frames">帧数</param>
+        /// <param name="cancellationToken">取消令牌</param>
+        public static UniTask DelayFrame(int frames, CancellationToken cancellationToken = default)
+        {
+            return UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
+        }
+
         #endregion
     }
 }

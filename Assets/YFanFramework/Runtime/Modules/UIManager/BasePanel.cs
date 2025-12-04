@@ -1,44 +1,42 @@
+using System;
+using System.Reflection;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using YFan.Runtime.Base;
 using YFan.Runtime.Base.Abstract;
-
 namespace YFan.Runtime.Modules
 {
     /// <summary>
-    /// 基础面板类
-    /// + 所有 UI 面板都应继承自该类
-    /// + 面板的生命周期管理 (Init, Open, Close, Hide, Show)
-    /// + 增强：支持遮罩配置、支持焦点管理
+    /// 基础面板类 (非泛型基类)
+    /// + 负责生命周期管理、特性配置读取
+    /// + 增加异步动画支持、暂停/恢复支持
     /// </summary>
     [RequireComponent(typeof(CanvasGroup))]
     public abstract class BasePanel : UIAbstractController
     {
-        #region 配置
+        #region 配置 (优先读取 Attribute)
+
+        private UIConfigAttribute _config;
+        private UIConfigAttribute Config => _config ??= this.GetType().GetCustomAttribute<UIConfigAttribute>();
+
+        public virtual UILayer Layer => Config?.Layer ?? UILayer.Mid;
+        public virtual string AssetKey => Config?.AssetKey ?? this.GetType().Name;
+        public virtual bool UseMask => Config?.UseMask ?? false;
+        public virtual bool CloseOnMaskClick => Config?.CloseOnMaskClick ?? false;
+        public virtual UICachePolicy CachePolicy => Config?.CachePolicy ?? UICachePolicy.Cache;
 
         /// <summary>
-        /// 指定该面板所属层级
+        /// 是否应用刘海屏安全区域适配
         /// </summary>
-        public abstract UILayer Layer { get; }
+        public virtual bool ApplySafeArea => true;
 
         /// <summary>
-        /// 指定 Addressable Key (默认使用类名)
+        /// 是否允许系统返回键 (Android/PC Esc) 关闭此面板
         /// </summary>
-        public virtual string AssetKey => this.GetType().Name;
+        public virtual bool AllowSystemBack => true;
 
         /// <summary>
-        /// 是否使用背景遮罩 (Blocker)
-        /// 如果为 true，UIManager 会在面板下方显示黑色半透明遮罩
-        /// </summary>
-        public virtual bool UseMask => false;
-
-        /// <summary>
-        /// 点击遮罩是否关闭当前面板 (仅当 UseMask = true 时有效)
-        /// </summary>
-        public virtual bool CloseOnMaskClick => false;
-
-        /// <summary>
-        /// 打开面板时默认选中的 UI 元素 (用于手柄/键盘导航)
-        /// 如果为空，则不自动设置焦点
+        /// 打开面板时默认选中的 UI 元素
         /// </summary>
         [SerializeField]
         private GameObject _defaultFocus;
@@ -48,80 +46,100 @@ namespace YFan.Runtime.Modules
 
         #region 内部状态
 
-        private CanvasGroup _canvasGroup; // 缓存 CanvasGroup 组件
+        private CanvasGroup _canvasGroup;
         public CanvasGroup CanvasGroup => _canvasGroup ? _canvasGroup : (_canvasGroup = GetComponent<CanvasGroup>());
 
-        public bool IsVisible { get; private set; } // 是否可见
-        public bool IsInited { get; private set; } // 是否初始化
+        public bool IsVisible { get; private set; }
+        public bool IsInited { get; private set; }
+
+        private RectTransform _rectTransform;
+        public RectTransform RectTransform => _rectTransform ? _rectTransform : (_rectTransform = GetComponent<RectTransform>());
 
         #endregion
 
         #region 生命周期 (由 UIManager 调用)
 
-        /// <summary>
-        /// 初始化面板
-        /// + 调用 OnInit 进行自定义初始化
-        /// + 设置 IsInited 为 true
-        /// </summary>
         public void Init()
         {
             if (IsInited) return;
+
+            // 安全区域适配
+            if (ApplySafeArea)
+            {
+                ApplySafeAreaOffset();
+            }
+
             OnInit();
             IsInited = true;
         }
 
         /// <summary>
-        /// 打开面板
-        /// + 设置 IsVisible 为 true
-        /// + 激活 GameObject
-        /// + 设置 CanvasGroup 为可见 (alpha = 1, blocksRaycasts = true)
-        /// + 调用 OnOpen 进行自定义打开逻辑
+        /// 异步打开面板
         /// </summary>
-        /// <param name="data">打开面板时传递的数据</param>
-        public void Open(UIPanelData data = null)
+        public async UniTask OpenAsync(UIPanelData data = null)
         {
             IsVisible = true;
             gameObject.SetActive(true);
+
+            // 重置状态
             CanvasGroup.alpha = 1;
             CanvasGroup.blocksRaycasts = true;
-            OnOpen(data);
+
+            // 执行自定义打开逻辑 (动画)
+            await OnOpenAsync(data);
         }
 
         /// <summary>
-        /// 关闭面板
-        /// + 设置 IsVisible 为 false
-        /// + 调用 OnClose 进行自定义关闭逻辑
-        /// + 停用 GameObject
+        /// 异步关闭面板
         /// </summary>
-        public void Close()
+        public async UniTask CloseAsync()
         {
+            CanvasGroup.blocksRaycasts = false;
+
+            // 执行自定义关闭逻辑 (动画)
+            await OnCloseAsync();
+
             IsVisible = false;
-            OnClose();
             gameObject.SetActive(false);
         }
 
         /// <summary>
-        /// 隐藏面板
-        /// + 设置 IsVisible 为 false
-        /// + 调用 OnHide 进行自定义隐藏逻辑
-        /// + 设置 CanvasGroup 为不可见 (alpha = 0, blocksRaycasts = false)
+        /// 暂停 (被压栈时调用)
+        /// </summary>
+        public void Pause()
+        {
+            if (!IsVisible) return;
+            CanvasGroup.blocksRaycasts = false;
+            OnPause();
+        }
+
+        /// <summary>
+        /// 恢复 (重新成为栈顶时调用)
+        /// </summary>
+        public void Resume()
+        {
+            if (IsVisible) return; // 只有非 Visible 状态才需要 Resume
+                                   // 注意：Resume 时不一定完全显示，取决于具体的实现，通常这里只是恢复交互
+                                   // 但在栈式 UI 中，Pop 后上一个页面通常需要重新变为可见
+            IsVisible = true;
+            CanvasGroup.blocksRaycasts = true;
+            OnResume();
+        }
+
+        /// <summary>
+        /// 仅隐藏 (不走完整关闭流程)
         /// </summary>
         public void Hide()
         {
             if (!IsVisible) return;
             IsVisible = false;
             CanvasGroup.blocksRaycasts = false;
-            // 栈式管理中，Hide 时通常只禁交互，或者完全隐藏，视需求而定
-            // 这里选择设为不可见以优化 DrawCall
             CanvasGroup.alpha = 0;
             OnHide();
         }
 
         /// <summary>
-        /// 显示面板
-        /// + 设置 IsVisible 为 true
-        /// + 调用 OnShow 进行自定义显示逻辑
-        /// + 设置 CanvasGroup 为可见 (alpha = 1, blocksRaycasts = true)
+        /// 仅显示
         /// </summary>
         public void Show()
         {
@@ -137,19 +155,66 @@ namespace YFan.Runtime.Modules
         #region 子类实现接口
 
         protected virtual void OnInit() { }
-        protected virtual void OnOpen(UIPanelData data) { }
-        protected virtual void OnClose() { }
+
+        // 核心生命周期改为异步，支持动画等待
+        protected virtual async UniTask OnOpenAsync(UIPanelData data) { await UniTask.CompletedTask; }
+        protected virtual async UniTask OnCloseAsync() { await UniTask.CompletedTask; }
+
+        protected virtual void OnPause() { }
+        protected virtual void OnResume() { }
         protected virtual void OnHide() { }
         protected virtual void OnShow() { }
 
         #endregion
 
-        /// <summary>
-        /// 自身关闭的快捷方法
-        /// </summary>
+        #region 辅助功能
+
         protected void CloseSelf()
         {
             YFanApp.Interface.GetSystem<IUIManager>().ClosePanel(this.GetType().Name);
         }
+
+        private void ApplySafeAreaOffset()
+        {
+            var safeArea = Screen.safeArea;
+            var anchorMin = safeArea.position;
+            var anchorMax = safeArea.position + safeArea.size;
+
+            anchorMin.x /= Screen.width;
+            anchorMin.y /= Screen.height;
+            anchorMax.x /= Screen.width;
+            anchorMax.y /= Screen.height;
+
+            // 检查是否有 SafeArea 组件或手动调整 Rect
+            // 这里简单直接修改 RectTransform 的 Anchor
+            // 注意：这假设 Panel 是全屏拉伸的
+            RectTransform.anchorMin = anchorMin;
+            RectTransform.anchorMax = anchorMax;
+        }
+
+        #endregion
+    }
+
+    /// <summary>
+    /// 泛型基础面板类 (推荐使用)
+    /// + 提供强类型的参数传递
+    /// </summary>
+    /// <typeparam name="TData">参数类型</typeparam>
+    public abstract class BasePanel<TData> : BasePanel where TData : UIPanelData
+    {
+        protected override async UniTask OnOpenAsync(UIPanelData data)
+        {
+            if (data is TData tData)
+            {
+                await OnOpen(tData);
+            }
+            else
+            {
+                // 如果没有传参或类型不对，传默认值
+                await OnOpen(default(TData));
+            }
+        }
+
+        protected abstract UniTask OnOpen(TData data);
     }
 }
