@@ -21,21 +21,28 @@ namespace YFan.Utils
         /// <param name="root">UI 根节点 (通常传入 transform)</param>
         public static void Bind(object target, Transform root)
         {
-            // 0. 预先建立 名字->节点 的索引缓存 (性能优化关键)
+            // 预先建立 名字->节点 的索引缓存 (性能优化关键)
             // 这样后续的查找都是 O(1) 或 O(logN)，避免反复递归 GetComponentsInChildren
             var nodeMap = MapAllChildren(root);
 
             Type type = target.GetType();
 
-            // 1. 处理字段绑定 ([UIBind])
+            // 处理字段绑定 ([UIBind])
             BindFields(target, root, type, nodeMap);
 
-            // 2. 处理方法绑定 ([BindClick] 等)
+            // 处理方法绑定 ([BindClick] 等)
             BindMethods(target, root, type, nodeMap);
         }
 
         #region 字段绑定
 
+        /// <summary>
+        /// 处理字段绑定 ([UIBind])
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="root"></param>
+        /// <param name="type"></param>
+        /// <param name="map"></param>
         private static void BindFields(object target, Transform root, Type type, Dictionary<string, Transform> map)
         {
             var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -92,6 +99,13 @@ namespace YFan.Utils
 
         #region 方法绑定
 
+        /// <summary>
+        /// 处理方法绑定 ([BindEvent])
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="root"></param>
+        /// <param name="type"></param>
+        /// <param name="map"></param>
         private static void BindMethods(object target, Transform root, Type type, Dictionary<string, Transform> map)
         {
             var methods = type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -123,6 +137,12 @@ namespace YFan.Utils
             }
         }
 
+        /// <summary>
+        /// 绑定按钮点击事件
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="method"></param>
+        /// <param name="node"></param>
         private static void BindButton(object target, MethodInfo method, Transform node)
         {
             var btn = node.GetComponent<Button>();
@@ -132,6 +152,12 @@ namespace YFan.Utils
             btn.onClick.AddListener(() => method.Invoke(target, null));
         }
 
+        /// <summary>
+        /// 绑定切换按钮事件
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="method"></param>
+        /// <param name="node"></param>
         private static void BindToggle(object target, MethodInfo method, Transform node)
         {
             var toggle = node.GetComponent<Toggle>();
@@ -139,6 +165,12 @@ namespace YFan.Utils
             toggle.onValueChanged.AddListener((val) => method.Invoke(target, new object[] { val }));
         }
 
+        /// <summary>
+        /// 绑定滑动条事件
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="method"></param>
+        /// <param name="node"></param>
         private static void BindFloat(object target, MethodInfo method, Transform node)
         {
             var slider = node.GetComponent<Slider>();
@@ -157,6 +189,13 @@ namespace YFan.Utils
             YLog.Error($"节点 {node.name} 无 Slider/Scrollbar 组件", "UIAutoBinder");
         }
 
+        /// <summary>
+        /// 绑定输入框事件
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="method"></param>
+        /// <param name="node"></param>
+        /// <param name="evtType"></param>
         private static void BindInput(object target, MethodInfo method, Transform node, BindInputAttribute.InputEvent evtType)
         {
             var input = node.GetComponent<InputField>();
@@ -198,17 +237,11 @@ namespace YFan.Utils
         /// </summary>
         private static Transform FindNode(Transform root, Dictionary<string, Transform> map, string nameOrPath)
         {
-            // 1. 如果包含 '/'，说明是路径，必须用 Transform.Find 精确查找
-            if (nameOrPath.Contains("/"))
-            {
-                return root.Find(nameOrPath);
-            }
+            // 如果包含 '/'，说明是路径，必须用 Transform.Find 精确查找
+            if (nameOrPath.Contains("/")) return root.Find(nameOrPath);
 
-            // 2. 如果是简单名字，查字典 (极速)
-            if (map.TryGetValue(nameOrPath, out Transform node))
-            {
-                return node;
-            }
+            // 如果是简单名字，查字典 (极速)
+            if (map.TryGetValue(nameOrPath, out Transform node)) return node;
 
             return null;
         }

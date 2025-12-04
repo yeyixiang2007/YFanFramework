@@ -7,23 +7,56 @@ namespace YFan.Utils
 {
     /// <summary>
     /// 自动模块绑定器
-    /// + 自动扫描带有 [AutoRegister] 的类，并注册到 Architecture 中
+    /// 扫描并注册所有实现了 ISystem、IModel、IUtility 接口的类
     /// </summary>
     public static class AutoModuleBinder
     {
         /// <summary>
-        /// 执行自动注册
+        /// 扫描并注册所有实现了 ISystem、IModel、IUtility 接口的类
         /// </summary>
-        /// <param name="architecture">架构实例 (this)</param>
+        /// <param name="architecture"></param>
         public static void ScanAndRegister(IArchitecture architecture)
         {
-            // 1. 获取当前程序集 (通常是 Assembly-CSharp)
-            // 优化：如果项目分了多个程序集，这里可能需要传入 Assembly 数组
-            var assembly = typeof(AutoModuleBinder).Assembly;
+            Assembly gameAssembly;
+            try
+            {
+                gameAssembly = Assembly.Load("Assembly-CSharp");
+            }
+            catch
+            {
+                // 如果是在 Editor 模式下某些特殊情况，或者项目改名了，可能找不到，回退到当前程序集
+                gameAssembly = typeof(AutoModuleBinder).Assembly;
+            }
 
-            // 2. 筛选所有带有 [AutoRegister] 的具体类
+            Assembly frameworkAssembly = typeof(AutoModuleBinder).Assembly;
+
+            RegisterAssembly(architecture, frameworkAssembly);
+            if (gameAssembly != frameworkAssembly && gameAssembly != null)
+            {
+                YLog.Info($"架构程序集扫描完成，开始扫描并注册游戏程序集 {gameAssembly.FullName}", "AutoModuleBinder");
+                RegisterAssembly(architecture, gameAssembly);
+            }
+        }
+
+        /// <summary>
+        /// 注册程序集中的所有类型
+        /// </summary>
+        /// <param name="architecture"></param>
+        /// <param name="assembly"></param>
+        private static void RegisterAssembly(IArchitecture architecture, Assembly assembly)
+        {
             var types = assembly.GetTypes()
-                .Where(t => t.IsClass && !t.IsAbstract && t.IsDefined(typeof(Attributes.AutoRegisterAttribute), false));
+                .Where(t => t.IsClass && !t.IsAbstract && t.IsDefined(typeof(Attributes.AutoRegisterAttribute), false))
+                .ToList();
+
+            int GetPriority(Type type)
+            {
+                if (typeof(IModel).IsAssignableFrom(type)) return 1;   // Model
+                if (typeof(ISystem).IsAssignableFrom(type)) return 2;  // System
+                if (typeof(IUtility).IsAssignableFrom(type)) return 3; // Utility
+                return 99;
+            }
+            types.Sort((a, b) => GetPriority(a).CompareTo(GetPriority(b)));
 
             foreach (var type in types)
             {
@@ -31,77 +64,63 @@ namespace YFan.Utils
             }
         }
 
+        /// <summary>
+        /// 注册单个类型
+        /// </summary>
+        /// <param name="architecture"></param>
+        /// <param name="concreteType"></param>
         private static void RegisterType(IArchitecture architecture, Type concreteType)
         {
-            // 获取 Attribute 信息
             var attr = concreteType.GetCustomAttribute<Attributes.AutoRegisterAttribute>();
-
-            // 确定注册的 Key (接口类型)
-            // 如果 Attribute 没填参数，默认尝试找它实现的第一个接口，或者就是它自己
             Type interfaceType = attr.InterfaceType;
 
             if (interfaceType == null)
             {
-                // 自动推断策略：找第一个并非 QFramework 基础接口的接口
-                // 这是一个简单的推断，建议显式指定接口类型
                 interfaceType = concreteType.GetInterfaces()
                     .FirstOrDefault(i => i != typeof(ISystem) && i != typeof(IModel) && i != typeof(IUtility));
-
                 if (interfaceType == null) interfaceType = concreteType;
             }
 
             try
             {
-                // 创建实例
                 object instance = Activator.CreateInstance(concreteType);
 
-                // 根据类型分类调用不同的注册方法
                 if (typeof(ISystem).IsAssignableFrom(concreteType))
                 {
                     InvokeRegisterMethod(architecture, "RegisterSystem", interfaceType, instance);
-                    YLog.Info($"自动注册 System: {concreteType.Name} -> {interfaceType.Name}", "AutoModuleBinder");
+                    YLog.Info($"自动注册 System: {concreteType.Name}", "AutoModuleBinder");
                 }
                 else if (typeof(IModel).IsAssignableFrom(concreteType))
                 {
                     InvokeRegisterMethod(architecture, "RegisterModel", interfaceType, instance);
-                    YLog.Info($"自动注册 Model: {concreteType.Name} -> {interfaceType.Name}", "AutoModuleBinder");
+                    YLog.Info($"自动注册 Model: {concreteType.Name}", "AutoModuleBinder");
                 }
                 else if (typeof(IUtility).IsAssignableFrom(concreteType))
                 {
                     InvokeRegisterMethod(architecture, "RegisterUtility", interfaceType, instance);
-                    YLog.Info($"自动注册 Utility: {concreteType.Name} -> {interfaceType.Name}", "AutoModuleBinder");
-                }
-                else
-                {
-                    YLog.Warn($"自动注册 类型 {concreteType.Name} 未实现 ISystem/IModel/IUtility，跳过注册。", "AutoModuleBinder");
+                    YLog.Info($"自动注册 Utility: {concreteType.Name}", "AutoModuleBinder");
                 }
             }
             catch (Exception e)
             {
-                YLog.Error($"自动注册 类型 {concreteType.Name} 注册失败: {e.Message}", "AutoModuleBinder");
+                YLog.Error($"自动注册失败 {concreteType.Name}: {e.Message}", "AutoModuleBinder");
             }
         }
 
         /// <summary>
-        /// 反射调用架构的泛型注册方法
-        /// e.g. architecture.RegisterSystem<IInputSystem>(new InputSystem());
+        /// 调用架构的注册方法
         /// </summary>
+        /// <param name="architecture"></param>
+        /// <param name="methodName"></param>
+        /// <param name="interfaceType"></param>
+        /// <param name="instance"></param>
         private static void InvokeRegisterMethod(IArchitecture architecture, string methodName, Type interfaceType, object instance)
         {
-            // 1. 获取方法元数据 (RegisterSystem<T>)
             MethodInfo methodInfo = architecture.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public);
-
             if (methodInfo != null)
             {
-                // 2. 构造泛型方法
                 MethodInfo genericMethod = methodInfo.MakeGenericMethod(interfaceType);
-
-                // 3. 执行
                 genericMethod.Invoke(architecture, new object[] { instance });
-            }
-            else
-            {
-                throw new Exception($"未在架构中找到方法 {methodName}");
             }
         }
     }

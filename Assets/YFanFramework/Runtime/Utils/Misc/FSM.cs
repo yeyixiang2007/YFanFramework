@@ -67,14 +67,14 @@ namespace YFan.Utils
                 return;
             }
 
-            // 1. 退出旧状态
+            // 退出旧状态
             if (CurrentState != null)
             {
                 PreviousState = CurrentState;
                 CurrentState.OnExit();
             }
 
-            // 2. 进入新状态
+            // 进入新状态
             CurrentState = newState;
             // YLog.Info($"切换状态: {newType.Name}", "FSM"); // Debug模式可开启
             CurrentState.OnEnter();
@@ -107,18 +107,12 @@ namespace YFan.Utils
         /// <summary>
         /// 轮询更新 (需要在 Owner 的 Update 中调用)
         /// </summary>
-        public void OnUpdate()
-        {
-            CurrentState?.OnUpdate();
-        }
+        public void OnUpdate() => CurrentState?.OnUpdate();
 
         /// <summary>
         /// 物理更新 (需要在 Owner 的 FixedUpdate 中调用)
         /// </summary>
-        public void OnFixedUpdate()
-        {
-            CurrentState?.OnFixedUpdate();
-        }
+        public void OnFixedUpdate() => CurrentState?.OnFixedUpdate();
 
         #endregion
 
