@@ -2,9 +2,9 @@ using System;
 using System.Collections;
 using QFramework;
 using UnityEngine;
-using YFan.Attributes;
+using YFan.Runtime.Attributes;
 
-namespace YFan.Utils
+namespace YFan.Runtime.Utils
 {
     /// <summary>
     /// 提供 Unity 生命周期事件的转发器

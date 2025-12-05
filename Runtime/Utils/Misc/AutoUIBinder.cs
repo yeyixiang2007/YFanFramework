@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
-using YFan.Attributes;
+using YFan.Runtime.Attributes;
 
-namespace YFan.Utils
+namespace YFan.Runtime.Utils
 {
     /// <summary>
     /// 自动绑定 UI 组件和事件
@@ -45,7 +45,7 @@ namespace YFan.Utils
         /// <param name="map"></param>
         private static void BindFields(object target, Transform root, Type type, Dictionary<string, Transform> map)
         {
-            var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
 
             foreach (var field in fields)
             {

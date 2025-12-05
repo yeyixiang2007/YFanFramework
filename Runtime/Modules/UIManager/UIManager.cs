@@ -6,8 +6,8 @@ using QFramework;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using YFan.Attributes;
-using YFan.Utils;
+using YFan.Runtime.Attributes;
+using YFan.Runtime.Utils;
 
 namespace YFan.Runtime.Modules
 {
@@ -119,7 +119,7 @@ namespace YFan.Runtime.Modules
             _maskObj.transform.SetParent(_uiRoot.transform, false);
 
             var img = _maskObj.AddComponent<Image>();
-            img.color = new Color(0, 0, 0, 0.75f);
+            img.color = new Color(0, 0, 0, 0f);
 
             _maskBtn = _maskObj.AddComponent<Button>();
             _maskBtn.transition = Selectable.Transition.None;

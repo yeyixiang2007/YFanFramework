@@ -7,7 +7,7 @@ using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using Object = UnityEngine.Object;
 
-namespace YFan.Utils
+namespace YFan.Runtime.Utils
 {
     /// <summary>
     /// 资产加载工具接口

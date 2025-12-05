@@ -11,7 +11,7 @@ using QFramework;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace YFan.Utils
+namespace YFan.Runtime.Utils
 {
     /// <summary>
     /// 日志等级枚举

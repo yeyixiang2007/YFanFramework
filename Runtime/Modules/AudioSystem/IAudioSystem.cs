@@ -1,7 +1,7 @@
 using Cysharp.Threading.Tasks;
 using QFramework;
 
-namespace YFan.Modules
+namespace YFan.Runtime.Modules
 {
     public interface IAudioSystem : ISystem
     {

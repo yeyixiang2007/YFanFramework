@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace YFan.Attributes
+namespace YFan.Runtime.Attributes
 {
     #region 装饰类
 

@@ -1,6 +1,6 @@
 using System;
 
-namespace YFan.Attributes
+namespace YFan.Runtime.Attributes
 {
     #region 字段绑定 (组件/物体)
 

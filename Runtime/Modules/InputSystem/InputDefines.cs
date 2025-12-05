@@ -1,6 +1,6 @@
 using System;
 
-namespace YFan.Modules
+namespace YFan.Runtime.Modules
 {
     /// <summary>
     /// 用于 SaveUtil 保存的输入配置数据

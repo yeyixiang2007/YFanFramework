@@ -1,9 +1,10 @@
-using System;
 using System.Reflection;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using YFan.Runtime.Base;
 using YFan.Runtime.Base.Abstract;
+using YFan.Runtime.Utils;
+
 namespace YFan.Runtime.Modules
 {
     /// <summary>
@@ -12,7 +13,7 @@ namespace YFan.Runtime.Modules
     /// + 增加异步动画支持、暂停/恢复支持
     /// </summary>
     [RequireComponent(typeof(CanvasGroup))]
-    public abstract class BasePanel : UIAbstractController
+    public abstract class BasePanel : AbstractController
     {
         #region 配置 (优先读取 Attribute)
 
@@ -69,6 +70,7 @@ namespace YFan.Runtime.Modules
                 ApplySafeAreaOffset();
             }
 
+            BindUI();
             OnInit();
             IsInited = true;
         }
@@ -193,6 +195,11 @@ namespace YFan.Runtime.Modules
         }
 
         #endregion
+
+        /// <summary>
+        /// 自动绑定 UI 元素
+        /// </summary>
+        protected void BindUI() => AutoUIBinder.Bind(this, transform);
     }
 
     /// <summary>

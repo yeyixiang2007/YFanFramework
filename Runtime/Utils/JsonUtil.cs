@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 
-namespace YFan.Utils
+namespace YFan.Runtime.Utils
 {
     /// <summary>
     /// 基于 Newtonsoft.Json 的高性能 JSON 工具

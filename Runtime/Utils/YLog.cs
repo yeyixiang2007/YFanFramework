@@ -1,6 +1,6 @@
 using System;
 
-namespace YFan.Utils
+namespace YFan.Runtime.Utils
 {
     /// <summary>
     /// LogUtil 的静态封装，提供全局访问入口

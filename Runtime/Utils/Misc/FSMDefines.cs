@@ -1,4 +1,4 @@
-namespace YFan.Utils
+namespace YFan.Runtime.Utils
 {
     /// <summary>
     /// 状态接口

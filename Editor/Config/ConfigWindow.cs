@@ -6,7 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
-using YFan.Attributes;
+using YFan.Runtime.Attributes;
 
 namespace YFan.Editor.Config
 {

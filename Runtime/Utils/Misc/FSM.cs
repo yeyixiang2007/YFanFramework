@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace YFan.Utils
+namespace YFan.Runtime.Utils
 {
     /// <summary>
     /// 有限状态机管理器

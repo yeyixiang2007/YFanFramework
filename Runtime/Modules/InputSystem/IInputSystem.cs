@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using QFramework;
 
-namespace YFan.Modules
+namespace YFan.Runtime.Modules
 {
     public interface IInputSystem : ISystem
     {

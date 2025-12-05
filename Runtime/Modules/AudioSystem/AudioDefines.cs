@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace YFan.Modules
+namespace YFan.Runtime.Modules
 {
     public enum AudioLayer
     {

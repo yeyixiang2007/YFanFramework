@@ -1,4 +1,4 @@
-namespace YFan
+namespace YFan.Runtime
 {
     /// <summary>
     /// 配置键名常量

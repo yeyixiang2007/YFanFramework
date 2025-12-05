@@ -3,7 +3,7 @@ using System.Linq;
 using System.Reflection;
 using QFramework;
 
-namespace YFan.Utils
+namespace YFan.Runtime.Utils
 {
     /// <summary>
     /// 自动模块绑定器

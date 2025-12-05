@@ -5,9 +5,11 @@
         "QFramework",
         "UniTask",
         "UniTask.Addressables",
+        "UniTask.DOTween",
         "Unity.Addressables",
         "Unity.ResourceManager",
-        "Unity.InputSystem"
+        "Unity.InputSystem",
+        "DOTween.Modules"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

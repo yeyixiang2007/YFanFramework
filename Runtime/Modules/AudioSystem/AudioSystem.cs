@@ -4,10 +4,10 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using QFramework;
 using UnityEngine;
-using YFan.Attributes;
-using YFan.Utils;
+using YFan.Runtime.Attributes;
+using YFan.Runtime.Utils;
 
-namespace YFan.Modules
+namespace YFan.Runtime.Modules
 {
     [AutoRegister(typeof(IAudioSystem))]
     public class AudioSystem : AbstractSystem, IAudioSystem

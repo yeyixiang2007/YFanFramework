@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using UnityEditor;
 using UnityEditor.Callbacks;
-using YFan.Utils;
+using YFan.Runtime.Utils;
 
 namespace YFan.Editor.Config
 {

@@ -1,6 +1,6 @@
 using System;
 
-namespace YFan.Attributes
+namespace YFan.Runtime.Attributes
 {
     /// <summary>
     /// 自动注册特性

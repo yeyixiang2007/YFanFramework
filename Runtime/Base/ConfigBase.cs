@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace YFan.Base
+namespace YFan.Runtime.Base
 {
     /// <summary>
     /// 所有配置表的基类 (ScriptableObject)
