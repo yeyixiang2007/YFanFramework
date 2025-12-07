@@ -15,9 +15,16 @@ namespace YFan.Runtime.Attributes
         /// </summary>
         public Type InterfaceType { get; private set; }
 
-        public AutoRegisterAttribute(Type interfaceType = null)
+        /// <summary>
+        /// 当前模块依赖的模块类型列表
+        /// 只有当所有依赖模块注册完成后，当前模块才会被注册
+        /// </summary>
+        public Type[] Dependencies { get; private set; }
+
+        public AutoRegisterAttribute(Type interfaceType = null, params Type[] dependencies)
         {
             InterfaceType = interfaceType;
+            Dependencies = dependencies ?? Type.EmptyTypes;
         }
     }
 }

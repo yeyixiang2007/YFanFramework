@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using QFramework;
@@ -58,9 +59,72 @@ namespace YFan.Runtime.Utils
             }
             types.Sort((a, b) => GetPriority(a).CompareTo(GetPriority(b)));
 
+            // 已注册的模块集合
+            var registeredModules = new HashSet<Type>();
+            // 等待注册的模块缓冲区
+            var waitingModules = new List<Type>();
+
             foreach (var type in types)
             {
-                RegisterType(architecture, type);
+                // 检查当前模块是否可以注册
+                if (CanRegisterType(type, registeredModules))
+                {
+                    RegisterType(architecture, type);
+                    registeredModules.Add(type);
+
+                    // 检查缓冲区中是否有模块可以注册
+                    ProcessWaitingModules(architecture, waitingModules, registeredModules);
+                }
+                else
+                {
+                    // 加入缓冲区
+                    waitingModules.Add(type);
+                    YLog.Info($"模块 {type.Name} 依赖未满足，加入注册缓冲区", "AutoModuleBinder");
+                }
+            }
+
+            // 检查是否有未注册的模块
+            if (waitingModules.Count > 0)
+            {
+                YLog.Warn($"以下模块因依赖未满足未能注册: {string.Join(", ", waitingModules.Select(t => t.Name))}", "AutoModuleBinder");
+            }
+        }
+
+        /// <summary>
+        /// 检查模块是否可以注册（依赖是否都已满足）
+        /// </summary>
+        /// <param name="type">要检查的模块类型</param>
+        /// <param name="registeredModules">已注册的模块集合</param>
+        /// <returns>是否可以注册</returns>
+        private static bool CanRegisterType(Type type, HashSet<Type> registeredModules)
+        {
+            var attr = type.GetCustomAttribute<Attributes.AutoRegisterAttribute>();
+            if (attr.Dependencies.Length == 0) return true;
+
+            // 检查所有依赖是否都已注册
+            return attr.Dependencies.All(dependency => registeredModules.Contains(dependency));
+        }
+
+        /// <summary>
+        /// 处理等待注册的模块
+        /// </summary>
+        /// <param name="architecture">架构实例</param>
+        /// <param name="waitingModules">等待注册的模块列表</param>
+        /// <param name="registeredModules">已注册的模块集合</param>
+        private static void ProcessWaitingModules(IArchitecture architecture, List<Type> waitingModules, HashSet<Type> registeredModules)
+        {
+            for (int i = waitingModules.Count - 1; i >= 0; i--)
+            {
+                var type = waitingModules[i];
+                if (CanRegisterType(type, registeredModules))
+                {
+                    RegisterType(architecture, type);
+                    registeredModules.Add(type);
+                    waitingModules.RemoveAt(i);
+
+                    // 递归检查是否有其他模块可以注册
+                    ProcessWaitingModules(architecture, waitingModules, registeredModules);
+                }
             }
         }
 
