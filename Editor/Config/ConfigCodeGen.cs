@@ -40,7 +40,7 @@ namespace YFan.Editor.Config
             sb.AppendLine("using System.Collections.Generic;");
             sb.AppendLine("using UnityEngine;");
             sb.AppendLine();
-            sb.AppendLine("namespace YFan.Base");
+            sb.AppendLine("namespace YFan.Runtime.Base");
             sb.AppendLine("{");
 
             // --- 生成单行数据结构 ---

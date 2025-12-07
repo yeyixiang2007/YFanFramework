@@ -22,8 +22,8 @@ namespace YFan.Editor.Config
         public static void ImportData(string csvFile)
         {
             string fileName = Path.GetFileNameWithoutExtension(csvFile);
-            string className = $"YFan.Base.{fileName}";
-            string tableClassName = $"YFan.Base.{fileName}Table";
+            string className = $"YFan.Runtime.Base.{fileName}";
+            string tableClassName = $"YFan.Runtime.Base.{fileName}Table";
 
             Type dataType = GetTypeByString(className);
             Type tableType = GetTypeByString(tableClassName);
@@ -35,7 +35,7 @@ namespace YFan.Editor.Config
             }
 
             if (!Directory.Exists(ConfigKeys.AssetPath)) Directory.CreateDirectory(ConfigKeys.AssetPath);
-            string assetFullPath = Path.Combine(ConfigKeys.AssetPath, $"{fileName}.asset");
+            string assetFullPath = Path.Combine(ConfigKeys.AssetPath, $"{fileName}Table.asset");
 
             ScriptableObject tableInstance = AssetDatabase.LoadAssetAtPath<ScriptableObject>(assetFullPath);
             if (tableInstance == null)

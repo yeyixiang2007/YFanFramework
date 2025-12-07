@@ -96,12 +96,10 @@ namespace YFan.Runtime.Modules
         /// </summary>
         public async UniTask CloseAsync()
         {
-            CanvasGroup.blocksRaycasts = false;
-
-            // 执行自定义关闭逻辑 (动画)
-            await OnCloseAsync();
-
             IsVisible = false;
+            CanvasGroup.blocksRaycasts = false;
+            await OnCloseAsync();
+            if (IsVisible) return;
             gameObject.SetActive(false);
         }
 

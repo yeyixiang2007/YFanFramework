@@ -18,13 +18,13 @@ namespace YFan.Runtime.Utils
     /// </summary>
     public abstract class AbstractState<T> : IState<T>
     {
-        protected FSM<T> mFSM;
-        protected T mOwner;
+        protected FSM<T> _fsm;
+        protected T _owner;
 
         public void OnInit(FSM<T> fsm, T owner)
         {
-            mFSM = fsm;
-            mOwner = owner;
+            _fsm = fsm;
+            _owner = owner;
             OnInit();
         }
 
@@ -61,7 +61,7 @@ namespace YFan.Runtime.Utils
         /// <typeparam name="TState"></typeparam>
         protected void ChangeState<TState>() where TState : IState<T>
         {
-            mFSM.ChangeState<TState>();
+            _fsm.ChangeState<TState>();
         }
     }
 }

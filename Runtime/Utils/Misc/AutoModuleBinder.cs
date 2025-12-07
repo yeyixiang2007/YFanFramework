@@ -51,9 +51,9 @@ namespace YFan.Runtime.Utils
 
             int GetPriority(Type type)
             {
-                if (typeof(IModel).IsAssignableFrom(type)) return 1;   // Model
-                if (typeof(ISystem).IsAssignableFrom(type)) return 2;  // System
-                if (typeof(IUtility).IsAssignableFrom(type)) return 3; // Utility
+                if (typeof(IUtility).IsAssignableFrom(type)) return 1; // Utility
+                if (typeof(IModel).IsAssignableFrom(type)) return 2;   // Model
+                if (typeof(ISystem).IsAssignableFrom(type)) return 3;  // System
                 return 99;
             }
             types.Sort((a, b) => GetPriority(a).CompareTo(GetPriority(b)));
